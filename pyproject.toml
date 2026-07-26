@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "titan-tfbs"
+version = "1.0.0"
+description = "Titan Formation Breakout System — the Titan Markets LLC proprietary strategy engine"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "Titan Markets LLC" }]
+keywords = ["trading", "prop-trading", "tfbs", "head-and-shoulders", "backtesting"]
+
+# The engine core runs on the standard library alone: no numpy, no pandas.
+dependencies = []
+
+[project.optional-dependencies]
+# Only needed to read YAML configs; JSON configs work without it.
+yaml = ["PyYAML>=6.0"]
+dev = ["pytest>=7.0", "PyYAML>=6.0"]
+
+[project.scripts]
+titan-tfbs = "titan_tfbs.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["titan_tfbs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

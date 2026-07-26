@@ -1,0 +1,234 @@
+# =============================================================================
+# TITAN MARKETS LLC — Titan Formation Breakout System (TFBS)
+# Firm configuration, version 1.0
+#
+# Sources:
+#   TFBS = TFBS Master Strategy Manual, v1.0, April 2026 (Matthius Douglas)
+#   RMG  = The Beginner's Complete Guide to Risk Management in Prop Trading,
+#          2026 Edition
+#
+# Every value below is either quoted directly from those documents (the
+# chapter is cited) or marked DERIVED where a prose rule had to be made
+# machine-executable. Changing a cited value is a strategy change and requires
+# CEO approval per TFBS Ch XIII-C.
+# =============================================================================
+
+account:
+  name: TITAN-DESK-01
+  # prop_desk = 1-2% risk, firm default Method B (TFBS Ch VIII-A, Ch VII)
+  # titan_entry = 0.5% risk, Method C until 30 positive trades (Ch XII-B)
+  profile: prop_desk
+  starting_balance: 500000.0        # TFBS Ch VIII-B worked example
+  currency: USD
+  consecutive_positive_trades: 0    # Ch XII-B counter
+
+# Instruments to scan. Empty = the firm's Ch I primaries.
+symbols: [XAUUSD, EURUSD, GBPUSD, USDJPY, CL, NQ, ES, RTY]
+
+atr_period: 14                      # DERIVED — volatility scale used engine-wide
+
+# -----------------------------------------------------------------------------
+# Pattern detection
+# -----------------------------------------------------------------------------
+
+swing:
+  lookback: 3                       # DERIVED — fractal half-width
+  min_swing_atr: 0.5                # DERIVED — noise suppression
+  max_history: 500
+
+head_shoulders:                     # TFBS Ch III-E quality filters
+  min_prior_trend_bars: 20          # MANDATORY: "min 20 bars"
+  min_prior_trend_atr: 2.0          # DERIVED — "clear established trend"
+  shoulder_symmetry_tolerance: 0.20 # PREFERRED: "within 20% of each other"
+  shoulder_duration_tolerance: 0.20 # PREFERRED: "...in height and duration"
+  max_neckline_angle_deg: 15.0      # PREFERRED: "< 15 degrees", ATR-normalised
+  min_formation_bars: 20            # PREFERRED: "20+ bars on primary TF"
+  max_formation_bars: 200           # DERIVED
+  min_head_prominence: 0.10         # DERIVED — head must clear both shoulders
+  require_volume_decline: false     # Ch III-C is PREFERRED, not mandatory
+  max_extra_shoulders: 2            # Ch XIV-B complex H&S
+  extra_shoulder_penalty: 0.15      # Ch XIV-B "each extra shoulder weakens"
+
+double_top:                         # TFBS Ch IV-C validation criteria
+  level_proximity_pct: 0.03         # "within 1-3% of each other"
+  level_proximity_height_frac: 0.15 # DERIVED — tightens the above for FX
+  min_pullback_frac_of_impulse: 0.10  # "min 10% of pattern height"
+  min_pullback_atr: 1.0             # DERIVED
+  context_lookback_bars: 100        # "must NOT form inside a wider range"
+  context_extreme_tolerance: 0.15   # DERIVED
+  min_prior_trend_bars: 20
+  min_prior_trend_atr: 2.0
+  require_volume_decline: false     # Ch IV-C volume profile is PREFERRED
+  triple_confluence_bonus: 1        # Ch IV-D "+1 confluence bonus"
+  min_formation_bars: 15
+  max_formation_bars: 200
+
+# -----------------------------------------------------------------------------
+# Breakout confirmation — TFBS Ch V
+# -----------------------------------------------------------------------------
+
+breakout:
+  require_candle_close: true        # Ch V-A criterion 1, REQUIRED
+  confirm_timeframe: entry          # Ch IX puts the breakout candle on Screen 3
+  min_close_beyond_atr: 0.05        # DERIVED — filters hairline closes
+  volume_surge_multiple: 1.5        # Ch V-A criterion 2: "> 1.5x"
+  volume_average_period: 20         # Ch V-A: "the 20-period average"
+  retest_max_bars: 40               # DERIVED — entry-screen bars
+  retest_tolerance_atr: 0.75        # DERIVED — the retest is a zone
+  retest_invalidate_on_close_back: true
+  retest_invalidation_buffer_atr: 1.25  # DERIVED — must exceed the zone above
+  reject_wick_only: true            # Ch V-B "No close = no trade"
+  reject_low_volume_break: false    # Ch V-A criterion 2 is STRONG PREF
+  reject_choppy_context: true       # Ch V-B choppy macro context
+  choppy_context_lookback: 100
+  choppy_apex_tolerance: 0.20       # DERIVED — apex must cap the range
+  divergence_rsi_period: 14         # Ch V-B skepticism filter
+  gap_min_atr: 0.5                  # Ch XIV-B gap handling
+  pattern_expiry_bars: 60           # DERIVED — Ch VI-B watchlist does not last
+
+# -----------------------------------------------------------------------------
+# Entry methodology — TFBS Ch VII
+# -----------------------------------------------------------------------------
+
+entry:
+  default_method: B                 # Ch VII Method B is the FIRM DEFAULT
+  titan_entry_method: C             # Ch XII-B
+  titan_entry_method_c_trades: 30   # Ch XII-B "until 30 consecutive trades"
+  pin_bar_wick_ratio: 2.0           # DERIVED — Ch VII "pin bar"
+  pin_bar_max_body_frac: 0.35       # DERIVED
+  engulfing_min_body_ratio: 1.0     # DERIVED — Ch VII "engulfing"
+  require_followthrough_close: true # Ch VII Method C
+  stop_buffer_atr: 0.15             # DERIVED — beyond the structural point
+  min_stop_atr: 0.50                # DERIVED — entry-screen floor
+  min_stop_spread_multiple: 4.0     # DERIVED — spread floor
+  min_stop_pattern_atr_frac: 0.25   # DERIVED — pattern-screen floor
+  max_stop_atr: 6.0                 # DERIVED — beyond this 2R is unreachable
+  enforce_structural_stop_floor: false  # true = ignore Method B's tighter stop
+
+# -----------------------------------------------------------------------------
+# Confluence scoring — TFBS Ch XI
+# -----------------------------------------------------------------------------
+
+confluence:
+  min_score_to_trade: 7             # "Only trades scoring 7/10 or higher"
+  elite_score: 9                    # 9-10 ELITE
+  approved_score: 7                 # 7-8 APPROVED
+  watchlist_score: 5                # 5-6 WATCHLIST
+  max_pattern_quality: 2
+  max_breakout_strength: 2
+  max_retest_confirm: 1
+  max_htf_alignment: 2
+  max_sr_confluence: 1
+  max_rr_ratio: 1
+  max_clean_path: 1
+  triple_bonus: 1                   # Ch IV-D
+  dual_pattern_bonus: 1             # Ch VI-B A+ ELITE overlap
+  clean_path_obstacle_frac: 0.75    # DERIVED
+  sr_confluence_atr: 0.75           # DERIVED
+
+# -----------------------------------------------------------------------------
+# Multi-timeframe protocol — TFBS Ch IX
+# -----------------------------------------------------------------------------
+
+mtf:
+  trend_timeframes: ["1D", "1W"]    # Screen 1 — TREND
+  pattern_timeframes: ["4H", "1H"]  # Screen 2 — PATTERN
+  entry_timeframes: ["15M", "5M"]   # Screen 3 — ENTRY
+  block_counter_trend: true         # Appendix A makes Screen 1 alignment [M]
+  bias_fast_ema: 20
+  bias_slow_ema: 50
+  min_bias_bars: 60
+  conflicting_screen_size_factor: 0.5  # Ch IX "reduce size or wait"
+
+# -----------------------------------------------------------------------------
+# Risk — TFBS Ch VIII-A + RMG s.02/s.05
+# -----------------------------------------------------------------------------
+
+risk:
+  max_risk_per_trade_pct: 2.0       # Ch VIII-A "1-2%", hard limit
+  default_risk_per_trade_pct: 1.0
+  titan_entry_risk_pct: 0.5         # Ch XII-B / RMG s.02
+  titan_entry_max_risk_pct: 0.5
+  elite_risk_pct: 2.0               # Ch XI: ELITE -> up to 2%
+  approved_risk_pct: 1.25           # Ch XI: APPROVED -> 1-1.5%
+  max_aggregate_open_risk_pct: 5.0  # Ch VIII-A hard limit
+  min_reward_risk: 2.0              # Ch VIII-A "2:1 — below = skip"
+  max_correlated_positions: 2       # Ch VIII-A "2 trades same currency/sector"
+  daily_loss_limit_pct: 3.0         # Ch VIII-A / Ch XII-A5
+  weekly_loss_limit_pct: 6.0        # Ch VIII-A / Ch XII-A5
+  monthly_dd_trigger_pct: 10.0      # Ch VIII-A — mandatory CEO review
+  dd_restricted_daily_pct: 2.0      # RMG s.05 ladder
+  dd_probation_daily_pct: 3.0
+  dd_suspended_daily_pct: 4.0
+  dd_restricted_max_pct: 8.0
+  dd_probation_max_pct: 10.0
+  dd_suspended_max_pct: 12.0
+  restricted_size_factor: 0.5       # RMG s.05 "position size cap enforced"
+  max_drawdown_basis: trailing      # DERIVED — trailing high-water mark
+  max_open_positions: 5             # DERIVED
+  max_trades_per_day: 4             # DERIVED from Ch XIII-B "3-8 per week"
+  max_trades_per_week: 8
+  allow_scaling: true               # Ch VIII-C
+  scale_in_requires_breakeven: true # Ch VIII-C
+  allow_averaging_down: false       # Ch XII-A2 — strictly prohibited
+
+# -----------------------------------------------------------------------------
+# Trade management — TFBS Ch X
+# -----------------------------------------------------------------------------
+
+trade_management:
+  breakeven_at_r: 1.0               # Ch X-A "when price moves 1R in your favor"
+  breakeven_offset_r: 0.05          # DERIVED — spread cushion
+  trail_start_r: 1.5                # Ch X-A "After 1.5R, trail"
+  trail_method: swing               # Ch X-A "most recent swing or 20-EMA"
+  trail_ema_period: 20
+  trail_swing_buffer_atr: 0.15
+  tp1_allocation: 0.50              # Ch X-B: measured move
+  tp2_allocation: 0.30              # Ch X-B: next significant S/R
+  tp3_allocation: 0.20              # Ch X-B: trailed runner
+  tp2_fallback_r: 3.0               # DERIVED — when no S/R exists beyond TP1
+  max_duration_multiple: 3.0        # Ch X-C "3x expected duration"
+  expected_duration_bars: 96        # DERIVED — entry-screen bars
+  exit_on_counter_pattern: true     # Ch X-C
+  exit_on_news_if_not_breakeven: true  # Ch X-C
+  exit_on_structural_invalidation: true # Ch X-C
+  allow_stop_widening: false        # Ch XIV-A5 "Stop only moves in your favor"
+
+# -----------------------------------------------------------------------------
+# Compliance — TFBS Ch XII
+# -----------------------------------------------------------------------------
+
+compliance:
+  block_anticipation_trades: true   # Ch XII-A1
+  require_pretrade_checklist: true  # Ch XII-A3
+  require_journal: true             # Ch XII-A4
+  journal_deadline_hours: 24        # Ch XII-A4 "within 24 hours"
+  news_blackout_before_min: 30      # Appendix A (stricter than Ch XII-A6's 15)
+  news_blackout_after_min: 5        # Ch XII-A6
+  yellow_flag_violations: 1         # Ch XII-C
+  orange_flag_violations: 2
+  orange_flag_window_days: 30
+  red_flag_violations: 3
+  orange_size_factor: 0.5           # Ch XII-C "size reduction"
+  promotion_days: 90                # Ch XII-B
+  promotion_min_profit_factor: 1.5
+  promotion_max_drawdown_pct: 6.0
+
+# -----------------------------------------------------------------------------
+# Execution & journal
+# -----------------------------------------------------------------------------
+
+execution:
+  pessimistic_intrabar: true        # assume the stop is tested before the target
+  slippage_atr: 0.02
+  pending_order_expiry_bars: 40
+  revalidate_rr_on_fill: true       # Ch VIII-A 2:1 is a hard limit at fill too
+  dry_run: true                     # set false only with a live broker attached
+
+journal:
+  enabled: true                     # Ch XII-A4 — mandatory
+  directory: journal
+  trade_log: tfbs_trades.csv
+  signal_log: tfbs_signals.csv
+  equity_log: tfbs_equity.csv
+  log_skipped_setups: true          # Ch XII-A4 "wins, losses, BE, skipped"
