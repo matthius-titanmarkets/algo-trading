@@ -293,9 +293,10 @@ class RiskManager:
         risk.size = max(0.0, risk.size - closed_size)
         risk.risk_amount *= (1.0 - fraction)
 
-    def register_close(self, trade_id: str, pnl: float) -> None:
+    def register_close(self, trade_id: str, pnl: float, floating: float = 0.0) -> None:
+        """Close out a trade. ``floating`` is the unrealized P&L still open."""
         self.open_risk.pop(trade_id, None)
-        self.state.apply_realized(pnl)
+        self.state.apply_realized(pnl, floating)
 
     # -- reviews -----------------------------------------------------------
 

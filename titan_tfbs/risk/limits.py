@@ -127,12 +127,21 @@ class AccountState:
 
     # -- accounting --------------------------------------------------------
 
-    def apply_realized(self, pnl: float) -> None:
+    def apply_realized(self, pnl: float, floating: float = 0.0) -> None:
+        """Bank a closed trade's P&L.
+
+        ``floating`` is the unrealized P&L of the positions that are *still*
+        open. It must be supplied whenever any are: equity is balance plus
+        floating, and marking equity at balance alone would read the open
+        book's unrealized profit as an instantaneous drawdown from the
+        high-water mark — enough to trip the RMG s.05 suspension trigger on
+        the back of a winning exit.
+        """
         self.balance += pnl
         self.realized_pnl_today += pnl
         self.realized_pnl_week += pnl
         self.realized_pnl_month += pnl
-        self.mark_equity(self.balance)
+        self.mark_equity(self.balance + floating)
 
     def mark_equity(self, equity: float) -> None:
         """Update floating equity and the high-water mark."""

@@ -279,7 +279,11 @@ class TFBSBot:
             trade_id=position.id, reason=fill.reason.value,
         )
         if not position.is_open:
-            self.risk.register_close(position.id, position.realized_pnl)
+            # The broker has already dropped this position, so the floating
+            # figure is exactly what remains open elsewhere on the book.
+            self.risk.register_close(
+                position.id, position.realized_pnl, floating=self._floating_pnl()
+            )
             self.closed_positions.append(position)
             # Ch XII-A4: every closed trade is journalled.
             self.journal.log_trade(position)
@@ -405,13 +409,17 @@ class TFBSBot:
 
     # -- account -----------------------------------------------------------
 
-    def _mark_equity(self) -> None:
-        floating = 0.0
+    def _floating_pnl(self) -> float:
+        """Unrealized P&L across the open book, at last traded prices."""
+        total = 0.0
         for position in self.broker.open_positions():
             price = self.last_price.get(position.signal.symbol)
             if price is not None:
-                floating += position.unrealized(price)
-        self.risk.mark_equity(self.risk.balance + floating)
+                total += position.unrealized(price)
+        return total
+
+    def _mark_equity(self) -> None:
+        self.risk.mark_equity(self.risk.balance + self._floating_pnl())
 
     def close_all(self, reason: ExitReason = ExitReason.MANUAL) -> None:
         """Flatten the book — end of a backtest, or a hard compliance stop."""

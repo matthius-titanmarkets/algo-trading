@@ -213,6 +213,25 @@ class TestDrawdownLadder:
         s.review_acknowledged_for_day = s.current_day
         assert not DrawdownMonitor(TitanConfig().risk).evaluate(s).can_trade
 
+    def test_banking_one_winner_does_not_fake_a_drawdown(self):
+        """Equity is balance plus floating, not balance alone.
+
+        Closing one leg of a multi-position book must not read the rest of the
+        book's open profit as an instantaneous drawdown — that would trip the
+        RMG s.05 suspension trigger on the back of a winning exit.
+        """
+        s = AccountState.open_account(100_000.0, NOW)
+        s.mark_equity(160_000.0)              # +60k floating across two trades
+        assert s.peak_equity == 160_000.0
+        # Bank 30k from one of them; the other still shows 30k open profit.
+        s.apply_realized(30_000.0, floating=30_000.0)
+        assert s.balance == 130_000.0
+        assert s.equity == 160_000.0
+        verdict = DrawdownMonitor(TitanConfig().risk).evaluate(s)
+        assert verdict.max_dd_pct == pytest.approx(0.0)
+        assert verdict.status is AccountStatus.ACTIVE
+        assert verdict.can_trade
+
     def test_a_new_session_resets_the_daily_measure(self):
         s = AccountState.open_account(100_000.0, NOW)
         s.balance = 96_000.0
