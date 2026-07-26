@@ -1,0 +1,867 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════
+//  TITAN MARKETS LLC — TITAN FORMATION BREAKOUT SYSTEM (TFBS)
+//  Proprietary & Confidential.  (c) 2026 Titan Markets LLC, Chicago, Illinois.
+//
+//  Chapter references are to the TFBS Master Strategy Manual v1.0 (April 2026)
+//  and the 2026 Risk Management Guide (RMG).
+//
+//  Run this on the Ch IX Screen 2 timeframe — 4H or 1H. The Screen 1 bias is
+//  pulled from the Daily/Weekly via request.security.
+//
+//  Pipeline (Ch VI-A):  SCAN -> VALIDATE -> CONFIRM -> SCORE -> SIZE ->
+//                       EXECUTE -> MANAGE
+//
+//  KNOWN LIMITS vs the Python engine (see tradingview/README.md):
+//    - Pine sees one symbol, so the Ch VIII-A aggregate 5% open risk and the
+//      2-per-sector correlated cap CANNOT be enforced here. Per-trade risk and
+//      the daily/weekly loss limits are enforced.
+//    - No economic calendar exists in Pine. Ch XII-A6 is approximated by a
+//      manual blackout window.
+//    - Breakout and retest are confirmed on the chart timeframe rather than on
+//      a separate 15M/5M screen.
+// ═══════════════════════════════════════════════════════════════════════════
+
+strategy("Titan TFBS — Formation Breakout System", "TFBS",
+     overlay                 = true,
+     initial_capital         = 500000,
+     default_qty_type        = strategy.fixed,
+     default_qty_value       = 1,
+     currency                = currency.USD,
+     commission_type         = strategy.commission.cash_per_contract,
+     commission_value        = 3.5,
+     process_orders_on_close = true,
+     calc_on_every_tick      = false,
+     max_bars_back           = 1000,
+     max_lines_count         = 500,
+     max_labels_count        = 500)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  INPUTS
+// ───────────────────────────────────────────────────────────────────────────
+
+var string G_PROFILE = "1 · Firm profile & risk (Ch VIII-A, Ch XII-B)"
+var string G_PATTERN = "2 · Pattern filters (Ch III-E, Ch IV-C)"
+var string G_BREAK   = "3 · Breakout protocol (Ch V)"
+var string G_ENTRY   = "4 · Entry methodology (Ch VII)"
+var string G_SCORE   = "5 · Confluence scoring (Ch XI)"
+var string G_MTF     = "6 · Multi-timeframe (Ch IX)"
+var string G_MANAGE  = "7 · Trade management (Ch X)"
+var string G_COMPLY  = "8 · Compliance (Ch XII)"
+var string G_VIEW    = "9 · Display"
+
+// ── Profile & risk ─────────────────────────────────────────────────────────
+i_profile     = input.string("Prop Desk", "Trader profile",
+     options = ["Prop Desk", "Titan Entry"], group = G_PROFILE,
+     tooltip = "Prop Desk: 1-2% per trade (Ch VIII-A). Titan Entry: 0.50% cap and " +
+               "Method C entries until 30 consecutive positive trades (Ch XII-B).")
+i_riskElite   = input.float(2.0,  "ELITE risk % (score 9-10)", minval = 0.1, maxval = 2.0,
+     step = 0.05, group = G_PROFILE, tooltip = "Ch XI: ELITE takes full size, up to 2%.")
+i_riskApprove = input.float(1.25, "APPROVED risk % (score 7-8)", minval = 0.1, maxval = 2.0,
+     step = 0.05, group = G_PROFILE, tooltip = "Ch XI: APPROVED takes the 1-1.5% band.")
+i_minRR       = input.float(2.0,  "Minimum reward:risk", minval = 1.0, step = 0.1,
+     group = G_PROFILE, tooltip = "Ch VIII-A HARD LIMIT: below 2:1 = skip the trade.")
+i_dailyLoss   = input.float(3.0,  "Daily loss limit %", minval = 0.5, step = 0.5,
+     group = G_PROFILE, tooltip = "Ch VIII-A / Ch XII-A5: 3% = cease trading for the day.")
+i_weeklyLoss  = input.float(6.0,  "Weekly loss limit %", minval = 1.0, step = 0.5,
+     group = G_PROFILE, tooltip = "Ch VIII-A / Ch XII-A5: 6% = mandatory cessation.")
+i_ddRestrict  = input.float(2.0,  "Daily DD -> size cap %", minval = 0.5, step = 0.5,
+     group = G_PROFILE, tooltip = "RMG s.05: the 2-3% band enforces a position size cap.")
+i_restrictMul = input.float(0.5,  "Size cap multiplier", minval = 0.1, maxval = 1.0,
+     step = 0.1, group = G_PROFILE)
+i_pointValue  = input.float(0.0,  "Point value override (0 = auto)", minval = 0.0,
+     group = G_PROFILE, tooltip = "Leave at 0 to use the symbol's own point value. Set this " +
+               "if your broker's contract differs from TradingView's.")
+
+// ── Pattern filters ────────────────────────────────────────────────────────
+i_pivotLen    = input.int(3,   "Swing lookback (fractal half-width)", minval = 2, maxval = 10,
+     group = G_PATTERN)
+i_priorBars   = input.int(20,  "Prior trend minimum bars", minval = 5, maxval = 200,
+     group = G_PATTERN, tooltip = "Ch III-E / Ch IV-C MANDATORY: a clear established trend " +
+               "must precede the formation — these are reversal patterns.")
+i_priorATR    = input.float(2.0, "Prior trend minimum ATR", minval = 0.5, step = 0.25,
+     group = G_PATTERN)
+i_symTol      = input.float(0.20, "Shoulder symmetry tolerance", minval = 0.05, maxval = 1.0,
+     step = 0.05, group = G_PATTERN, tooltip = "Ch III-E PREFERRED: shoulders within 20% of " +
+               "each other in height and duration.")
+i_neckAngle   = input.float(15.0, "Max neckline angle (deg)", minval = 1.0, maxval = 60.0,
+     group = G_PATTERN, tooltip = "Ch III-E: flat or gently sloping (< 15 degrees). " +
+               "ATR-normalised so it is scale free: 1 ATR per bar = 45 degrees.")
+i_minFormBars = input.int(20,  "Minimum formation bars", minval = 5, group = G_PATTERN,
+     tooltip = "Ch III-E PREFERRED: developed over 20+ bars.")
+i_maxFormBars = input.int(200, "Maximum formation bars", minval = 20, maxval = 400,
+     group = G_PATTERN)
+i_headProm    = input.float(0.10, "Minimum head prominence", minval = 0.02, maxval = 0.5,
+     step = 0.01, group = G_PATTERN, tooltip = "The head must clear both shoulders by this " +
+               "fraction of pattern height, else the three peaks are a range.")
+i_levelTol    = input.float(0.15, "DT/DB level proximity (x height)", minval = 0.02, maxval = 1.0,
+     step = 0.01, group = G_PATTERN, tooltip = "Ch IV-C says peaks within 1-3%, which is far " +
+               "too loose on FX (3% of EURUSD is 375 pips), so proximity is also bounded as a " +
+               "fraction of the pattern's own height.")
+i_ctxLookback = input.int(100, "Range-context lookback", minval = 20, maxval = 300,
+     group = G_PATTERN, tooltip = "Ch IV-C: 'Pattern must NOT form inside a wider range.'")
+i_ctxTol      = input.float(0.20, "Apex must cap the range within", minval = 0.05, maxval = 0.6,
+     step = 0.05, group = G_PATTERN)
+i_volDecline  = input.bool(false, "Require declining volume profile", group = G_PATTERN,
+     tooltip = "Ch III-C / Ch IV-C list this as PREFERRED, not mandatory.")
+
+// ── Breakout protocol ──────────────────────────────────────────────────────
+i_closeBuf    = input.float(0.05, "Close-beyond buffer (ATR)", minval = 0.0, step = 0.01,
+     group = G_BREAK, tooltip = "Ch V-A criterion 1 REQUIRED: the candle must CLOSE beyond " +
+               "the key level. Wicks are never confirmation.")
+i_volSurge    = input.float(1.5, "Volume surge multiple", minval = 1.0, step = 0.1,
+     group = G_BREAK, tooltip = "Ch V-A criterion 2 STRONG PREF: volume > 1.5x the " +
+               "20-period average.")
+i_volLen      = input.int(20, "Volume average period", minval = 5, group = G_BREAK)
+i_rejectLowVol= input.bool(false, "Reject low-volume breaks outright", group = G_BREAK,
+     tooltip = "Ch V-A criterion 2 is STRONG PREF, not REQUIRED. Off by default.")
+i_retestBars  = input.int(40, "Retest window (bars)", minval = 1, group = G_BREAK)
+i_retestTol   = input.float(0.75, "Retest zone (ATR)", minval = 0.1, step = 0.05,
+     group = G_BREAK, tooltip = "A retest is a zone, not a price.")
+i_invalBuf    = input.float(1.25, "Flip-failure buffer (ATR)", minval = 0.2, step = 0.05,
+     group = G_BREAK, tooltip = "MUST exceed the retest zone above: price inside the zone is " +
+               "retesting, not invalidating.")
+i_expiryBars  = input.int(60, "Armed formation expiry (bars)", minval = 5, group = G_BREAK,
+     tooltip = "Ch VI-B: an unbroken formation is watchlist-only, and cannot stay there forever.")
+
+// ── Entry methodology ──────────────────────────────────────────────────────
+i_method      = input.string("B — Standard (retest)", "Entry method",
+     options = ["A — Aggressive (break close)", "B — Standard (retest)",
+                "C — Conservative (retest + follow-through)"],
+     group = G_ENTRY, tooltip = "Ch VII: Method B is the FIRM DEFAULT. Titan Entry accounts " +
+               "are forced onto Method C by the profile setting.")
+i_stopBuf     = input.float(0.15, "Stop buffer (ATR)", minval = 0.0, step = 0.05, group = G_ENTRY)
+i_minStopATR  = input.float(0.50, "Minimum stop (ATR)", minval = 0.1, step = 0.05, group = G_ENTRY)
+i_minStopPat  = input.float(0.25, "Minimum stop (x pattern ATR)", minval = 0.0, step = 0.05,
+     group = G_ENTRY, tooltip = "The thesis being invalidated is a whole formation, so a stop " +
+               "scaled only to one bar's noise is not really protecting it.")
+i_maxStopATR  = input.float(6.0, "Maximum stop (ATR)", minval = 1.0, step = 0.5, group = G_ENTRY,
+     tooltip = "Wider than this and the measured move cannot realistically pay 2R.")
+
+// ── Confluence scoring ─────────────────────────────────────────────────────
+i_minScore    = input.int(7, "Minimum score to trade", minval = 0, maxval = 10, group = G_SCORE,
+     tooltip = "Ch XI: 'Only trades scoring 7/10 or higher are approved.'")
+i_eliteScore  = input.int(9, "ELITE threshold", minval = 5, maxval = 10, group = G_SCORE)
+i_srTol       = input.float(0.75, "S/R confluence tolerance (ATR)", minval = 0.1, step = 0.05,
+     group = G_SCORE)
+
+// ── Multi-timeframe ────────────────────────────────────────────────────────
+i_trendTF     = input.timeframe("D", "Screen 1 — trend timeframe", group = G_MTF,
+     tooltip = "Ch IX: Daily/Weekly sets the macro directional bias.")
+i_emaFast     = input.int(20, "Bias fast EMA", minval = 2, group = G_MTF)
+i_emaSlow     = input.int(50, "Bias slow EMA", minval = 5, group = G_MTF)
+i_blockCounter= input.bool(true, "Block counter-trend setups", group = G_MTF,
+     tooltip = "Appendix A makes Screen 1 alignment MANDATORY, so counter-trend setups are " +
+               "blocked rather than merely penalised.")
+i_noRepaint   = input.bool(true, "Use last CLOSED higher-TF bar (no repaint)", group = G_MTF,
+     tooltip = "On: the bias comes from the last completed Daily/Weekly bar, so live " +
+               "behaviour matches the backtest exactly. Off: the bias reads the developing " +
+               "HTF bar — more responsive, but it can flip intraday and your backtest will " +
+               "then flatter the live result. Leave this on.")
+
+// ── Trade management ───────────────────────────────────────────────────────
+i_beAtR       = input.float(1.0, "Breakeven at R", minval = 0.1, step = 0.1, group = G_MANAGE,
+     tooltip = "Ch X-A: move SL to BE at 1R. RMG s.03 warns against moving it there sooner.")
+i_beOffset    = input.float(0.05, "Breakeven offset (R)", minval = 0.0, step = 0.01, group = G_MANAGE)
+i_trailAtR    = input.float(1.5, "Trail from R", minval = 0.1, step = 0.1, group = G_MANAGE,
+     tooltip = "Ch X-A: after 1.5R trail on the most recent swing or the 20-EMA.")
+i_trailMode   = input.string("Swing", "Trail method", options = ["Swing", "EMA"], group = G_MANAGE)
+i_trailEMA    = input.int(20, "Trail EMA period", minval = 2, group = G_MANAGE)
+i_trailSwing  = input.int(10, "Trail swing lookback", minval = 2, group = G_MANAGE)
+i_trailBuf    = input.float(0.15, "Trail buffer (ATR)", minval = 0.0, step = 0.05, group = G_MANAGE)
+i_tp1Pct      = input.float(50, "TP1 allocation %", minval = 0, maxval = 100, step = 5,
+     group = G_MANAGE, tooltip = "Ch X-B: TP1 50% at the measured move.")
+i_tp2Pct      = input.float(30, "TP2 allocation %", minval = 0, maxval = 100, step = 5,
+     group = G_MANAGE, tooltip = "Ch X-B: TP2 30% at the next significant S/R.")
+i_tp2R        = input.float(3.0, "TP2 fallback (R)", minval = 1.0, step = 0.5, group = G_MANAGE)
+i_maxBars     = input.int(288, "Max bars in trade", minval = 10, group = G_MANAGE,
+     tooltip = "Ch X-C: close a trade open 3x its expected duration without reaching TP1.")
+i_exitCounter = input.bool(true, "Exit on counter-pattern", group = G_MANAGE, tooltip = "Ch X-C")
+i_exitInval   = input.bool(true, "Exit on technical invalidation", group = G_MANAGE, tooltip = "Ch X-C")
+
+// ── Compliance ─────────────────────────────────────────────────────────────
+i_useBlackout = input.bool(false, "Enable news blackout window", group = G_COMPLY,
+     tooltip = "Ch XII-A6: no entries within 30 min before / 5 min after high-impact " +
+               "releases. Pine has no economic calendar, so this is a manual window.")
+i_blackout    = input.session("1230-1345", "Blackout session (exchange time)", group = G_COMPLY)
+i_tradeSess   = input.session("0000-2400", "Permitted trading session", group = G_COMPLY)
+
+// ── Display ────────────────────────────────────────────────────────────────
+i_showNeck    = input.bool(true, "Draw necklines", group = G_VIEW)
+i_showLabels  = input.bool(true, "Label formations & scores", group = G_VIEW)
+i_showLevels  = input.bool(true, "Plot live SL / TP levels", group = G_VIEW)
+i_showWick    = input.bool(true, "Mark wick-only penetrations (Ch V-B)", group = G_VIEW)
+i_showPanel   = input.bool(true, "Show status panel", group = G_VIEW)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  DERIVED SETTINGS
+// ───────────────────────────────────────────────────────────────────────────
+
+isTitanEntry = i_profile == "Titan Entry"
+// Ch XII-B: Titan Entry is capped at 0.50% and forced onto Method C.
+riskElite    = isTitanEntry ? 0.5 : i_riskElite
+riskApproved = isTitanEntry ? 0.5 : i_riskApprove
+methodCode   = isTitanEntry ? "C" : str.substring(i_method, 0, 1)
+
+// ── All ta.* series are computed here, unconditionally, every bar. Pine keeps
+//    internal state for these; calling them inside an if-branch would corrupt
+//    that state, so nothing below re-derives them locally.
+atr     = ta.atr(14)
+volAvg  = ta.sma(volume, i_volLen)
+emaTr   = ta.ema(close, i_trailEMA)
+emaF    = ta.ema(close, i_emaFast)
+emaS    = ta.ema(close, i_emaSlow)
+ctxHi   = ta.highest(high, i_ctxLookback)
+ctxLo   = ta.lowest(low,  i_ctxLookback)
+pathHi  = ta.highest(high, 20)
+pathLo  = ta.lowest(low,  20)
+swingHi = ta.highest(high, i_trailSwing)
+swingLo = ta.lowest(low,  i_trailSwing)
+legVol  = ta.sma(volume, i_pivotLen * 2 + 1)[i_pivotLen]
+ph      = ta.pivothigh(high, i_pivotLen, i_pivotLen)
+pl      = ta.pivotlow(low,   i_pivotLen, i_pivotLen)
+
+pointVal = i_pointValue > 0 ? i_pointValue : syminfo.pointvalue
+tick     = syminfo.mintick
+
+// ───────────────────────────────────────────────────────────────────────────
+//  SCREEN 1 — HIGHER-TIMEFRAME BIAS (Ch IX)
+// ───────────────────────────────────────────────────────────────────────────
+//  Ch II Pillar 1 is explicit that structure is primary and moving averages
+//  are supplementary, so a bias needs EMA alignment AND price on the correct
+//  side of it. Either alone is not a trend.
+
+f_biasScore() =>
+    float f = ta.ema(close, i_emaFast)
+    float s = ta.ema(close, i_emaSlow)
+    int  sc = 0
+    if f > s and close > f
+        sc := 1
+    else if f < s and close < f
+        sc := -1
+    sc
+
+// Reading the *developing* higher-timeframe bar makes a strategy repaint: the
+// backtest sees a value the live chart did not have at that moment. Taking the
+// previous, completed bar keeps backtest and live identical.
+htfRaw  = request.security(syminfo.tickerid, i_trendTF, f_biasScore(),
+     lookahead = barmerge.lookahead_off)
+htfPrev = request.security(syminfo.tickerid, i_trendTF, f_biasScore()[1],
+     lookahead = barmerge.lookahead_off)
+htfBias = i_noRepaint ? htfPrev : htfRaw
+htfBull = htfBias ==  1
+htfBear = htfBias == -1
+
+// ───────────────────────────────────────────────────────────────────────────
+//  SWING STRUCTURE — the skeleton every formation is built from
+// ───────────────────────────────────────────────────────────────────────────
+
+var array<float> pvPrice = array.new<float>()
+var array<int>   pvBar   = array.new<int>()
+var array<bool>  pvHigh  = array.new<bool>()
+var array<float> pvVol   = array.new<float>()
+
+f_pushPivot(float p, int b, bool isHigh, float vol) =>
+    int n = array.size(pvHigh)
+    bool merged = false
+    // Collapse consecutive same-type pivots, keeping the more extreme.
+    if n > 0 and array.get(pvHigh, n - 1) == isHigh
+        float prev = array.get(pvPrice, n - 1)
+        bool better = isHigh ? p > prev : p < prev
+        if better
+            array.set(pvPrice, n - 1, p)
+            array.set(pvBar,   n - 1, b)
+            array.set(pvVol,   n - 1, vol)
+        merged := true
+    if not merged
+        array.push(pvPrice, p)
+        array.push(pvBar,   b)
+        array.push(pvHigh,  isHigh)
+        array.push(pvVol,   vol)
+        if array.size(pvPrice) > 12
+            array.shift(pvPrice)
+            array.shift(pvBar)
+            array.shift(pvHigh)
+            array.shift(pvVol)
+
+if not na(ph)
+    f_pushPivot(ph, bar_index - i_pivotLen, true, legVol)
+if not na(pl)
+    f_pushPivot(pl, bar_index - i_pivotLen, false, legVol)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  FORMATION MODEL
+// ───────────────────────────────────────────────────────────────────────────
+
+type Formation
+    string kind         = "none"   // H&S | InvH&S | DT | DB | TT | TB
+    bool   bearish      = false
+    float  neckAnchor   = 0.0      // neckline price at neckBar
+    float  neckSlope    = 0.0      // price per bar
+    int    neckBar      = 0
+    float  height       = 0.0      // measured-move height (Ch III-D / Ch IV-D)
+    float  invalidation = 0.0      // structural stop reference (Ch VII / Ch X-A)
+    float  apex         = 0.0      // the head, or the tested level
+    int    qualityPts   = 0        // Ch XI "Pattern Quality" factor, 0-2
+    int    startBar     = 0
+    int    endBar       = 0
+    bool   volumeOk     = false
+    bool   triple       = false
+    float  patAtr       = 0.0
+
+method neckAt(Formation this, int b) =>
+    this.neckAnchor + this.neckSlope * (b - this.neckBar)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  QUALITY FILTERS (Ch III-E, Ch IV-C)
+// ───────────────────────────────────────────────────────────────────────────
+
+// MANDATORY: a clear established trend must precede the formation. Leg size
+// alone cannot separate a trend from one swing of a range, so the EMA
+// structure at the formation's start has to agree with the direction.
+f_priorTrendOk(int startBar, bool wantUp) =>
+    int off = bar_index - startBar
+    bool ok = false
+    if off >= 0 and off + i_priorBars < bar_index
+        float pStart = close[off + i_priorBars]
+        float pEnd   = close[off]
+        float leg    = math.abs(pEnd - pStart)
+        bool  dirOk  = wantUp ? pEnd > pStart : pEnd < pStart
+        bool  sizeOk = leg >= i_priorATR * atr[off]
+        bool  strOk  = wantUp ? emaF[off] > emaS[off] : emaF[off] < emaS[off]
+        ok := dirOk and sizeOk and strOk
+    ok
+
+// MANDATORY (Ch IV-C): the apex must cap the enclosing range. Measured at the
+// formation, not at the break — the break's own follow-through would extend
+// the range and make every good setup look like it formed mid-range.
+f_contextOk(int endBar, float apex, bool bearish) =>
+    int off = bar_index - endBar
+    bool ok = false
+    if off >= 0
+        float span = ctxHi[off] - ctxLo[off]
+        if span > 0
+            float dist = bearish ? (ctxHi[off] - apex) / span : (apex - ctxLo[off]) / span
+            ok := dist <= i_ctxTol
+    ok
+
+// Ch III-E PREFERRED filters map onto the Ch XI 0-2 "Pattern Quality" factor:
+// 0 = Ambiguous, 1 = Acceptable, 2 = Textbook.
+f_qualityPoints(bool symH, bool symD, bool neckFlat, bool longEnough, bool volOk) =>
+    int passed = (symH ? 1 : 0) + (symD ? 1 : 0) + (neckFlat ? 1 : 0) +
+                 (longEnough ? 1 : 0) + (volOk ? 1 : 0)
+    float ratio = passed / 5.0
+    ratio >= 0.80 ? 2 : ratio >= 0.50 ? 1 : 0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  PATTERN DETECTION (Ch VI-A steps 1-2: SCAN + VALIDATE)
+// ───────────────────────────────────────────────────────────────────────────
+
+f_detect() =>
+    Formation f = Formation.new()
+    int n = array.size(pvPrice)
+
+    // ── Five-pivot window: H&S / Inverse H&S, or the Triple variant ────────
+    if n >= 5
+        float p1 = array.get(pvPrice, n - 5)
+        float t1 = array.get(pvPrice, n - 4)
+        float p2 = array.get(pvPrice, n - 3)
+        float t2 = array.get(pvPrice, n - 2)
+        float p3 = array.get(pvPrice, n - 1)
+        int   b1 = array.get(pvBar,   n - 5)
+        int   bt1= array.get(pvBar,   n - 4)
+        int   b2 = array.get(pvBar,   n - 3)
+        int   bt2= array.get(pvBar,   n - 2)
+        int   b3 = array.get(pvBar,   n - 1)
+        bool  firstIsHigh = array.get(pvHigh, n - 5)
+        float v1 = array.get(pvVol, n - 5)
+        float v2 = array.get(pvVol, n - 3)
+        float v3 = array.get(pvVol, n - 1)
+
+        int span = b3 - b1
+        if span >= 8 and span <= i_maxFormBars and bt2 > bt1
+            float slope   = (t2 - t1) / math.max(1, bt2 - bt1)
+            float angle   = math.todegrees(math.atan(slope / math.max(atr, tick)))
+            bool  flat    = math.abs(angle) <= i_neckAngle
+            float neckApex= t1 + slope * (b2 - bt1)
+            float h       = math.abs(p2 - neckApex)
+            // Ch XIV-B: a steep neckline distorts the measured move — use the
+            // head-to-neckline distance at the midpoint instead.
+            if not flat
+                int mid = int(math.round(math.avg(bt1, bt2)))
+                h := math.abs(p2 - (t1 + slope * (mid - bt1)))
+
+            if h > 0
+                bool  bearish = firstIsHigh
+                float outer   = bearish ? math.max(p1, p3) : math.min(p1, p3)
+                float prom    = math.abs(p2 - outer) / h
+                bool  headOut = bearish ? (p2 > p1 and p2 > p3) : (p2 < p1 and p2 < p3)
+                float spread  = math.max(math.max(p1, p2), p3) - math.min(math.min(p1, p2), p3)
+                bool  allLevel= spread <= i_levelTol * h
+
+                float sh1 = bearish ? p1 - (t1 + slope * (b1 - bt1)) : (t1 + slope * (b1 - bt1)) - p1
+                float sh3 = bearish ? p3 - (t1 + slope * (b3 - bt1)) : (t1 + slope * (b3 - bt1)) - p3
+                bool  geomOk = sh1 > 0 and sh3 > 0
+                float symH   = math.abs(sh1 - sh3) / math.max(math.max(sh1, sh3), tick)
+                int   d1     = math.max(1, b2 - b1)
+                int   d2     = math.max(1, b3 - b2)
+                float symD   = math.abs(d1 - d2) / math.max(d1, d2)
+                bool  volOk  = v1 > v2 and v2 > v3
+                bool  trendOk= f_priorTrendOk(b1, bearish)
+
+                // ── Head & Shoulders (Ch III) ──────────────────────────────
+                if headOut and prom >= i_headProm and geomOk and trendOk and
+                   f_contextOk(b3, p2, bearish) and (not i_volDecline or volOk)
+                    f.kind         := bearish ? "H&S" : "InvH&S"
+                    f.bearish      := bearish
+                    f.neckAnchor   := t1 + slope * (b3 - bt1)
+                    f.neckSlope    := slope
+                    f.neckBar      := b3
+                    f.height       := h
+                    f.invalidation := p3
+                    f.apex         := p2
+                    f.qualityPts   := f_qualityPoints(symH <= i_symTol, symD <= i_symTol,
+                                                      flat, span >= i_minFormBars, volOk)
+                    f.startBar     := b1
+                    f.endBar       := b3
+                    f.volumeOk     := volOk
+                    f.patAtr       := atr
+
+                // ── Triple Top / Bottom (Ch IV-D, +1 confluence) ───────────
+                else if allLevel and geomOk and trendOk
+                    float conf  = bearish ? math.min(t1, t2) : math.max(t1, t2)
+                    float lvl   = (p1 + p2 + p3) / 3.0
+                    float hh    = math.abs(lvl - conf)
+                    float ext   = bearish ? math.max(math.max(p1, p2), p3)
+                                          : math.min(math.min(p1, p2), p3)
+                    if hh >= atr and f_contextOk(b3, ext, bearish) and
+                       (not i_volDecline or volOk)
+                        f.kind         := bearish ? "TT" : "TB"
+                        f.bearish      := bearish
+                        f.neckAnchor   := conf
+                        f.neckSlope    := 0.0
+                        f.neckBar      := b3
+                        f.height       := hh
+                        f.invalidation := ext
+                        f.apex         := lvl
+                        f.qualityPts   := f_qualityPoints(true, true, true,
+                                                          span >= i_minFormBars, volOk)
+                        f.startBar     := b1
+                        f.endBar       := b3
+                        f.volumeOk     := volOk
+                        f.triple       := true
+                        f.patAtr       := atr
+
+    // ── Three-pivot window: Double Top / Double Bottom (Ch IV) ─────────────
+    if f.kind == "none" and n >= 3
+        float q1 = array.get(pvPrice, n - 3)
+        float c1 = array.get(pvPrice, n - 2)
+        float q2 = array.get(pvPrice, n - 1)
+        int   a1 = array.get(pvBar,   n - 3)
+        int   a2 = array.get(pvBar,   n - 1)
+        bool  isHigh = array.get(pvHigh, n - 3)
+        float w1 = array.get(pvVol, n - 3)
+        float w2 = array.get(pvVol, n - 1)
+
+        int span2 = a2 - a1
+        if span2 >= 6 and span2 <= i_maxFormBars
+            float lvl  = (q1 + q2) / 2.0
+            float hh   = math.abs(lvl - c1)
+            float gap  = math.abs(q1 - q2)
+            // Ch IV-C level proximity, bounded both ways.
+            bool  near = hh > 0 and gap <= i_levelTol * hh and
+                         gap / math.max(math.abs(lvl), tick) <= 0.03
+            // Ch IV-C: the pullback between tests must be a real structural
+            // move — "No pullback = consolidation."
+            bool  pullOk = hh >= atr
+            float apex2  = isHigh ? math.max(q1, q2) : math.min(q1, q2)
+            bool  volOk2 = w1 > w2
+
+            if near and pullOk and f_priorTrendOk(a1, isHigh) and
+               f_contextOk(a2, apex2, isHigh) and (not i_volDecline or volOk2)
+                f.kind         := isHigh ? "DT" : "DB"
+                f.bearish      := isHigh
+                f.neckAnchor   := c1
+                f.neckSlope    := 0.0
+                f.neckBar      := a2
+                f.height       := hh
+                f.invalidation := apex2
+                f.apex         := apex2
+                f.qualityPts   := f_qualityPoints(true, true, true,
+                                                  span2 >= i_minFormBars, volOk2)
+                f.startBar     := a1
+                f.endBar       := a2
+                f.volumeOk     := volOk2
+                f.patAtr       := atr
+    f
+
+detected = f_detect()
+
+// ───────────────────────────────────────────────────────────────────────────
+//  BREAKOUT STATE MACHINE (Ch V)
+//    armed -> broken -> retested -> ready
+//  Method A fires at 'broken', B at 'retested', C at 'ready' (Ch VII).
+//  Nothing trades before a confirming close: Ch XII-A1 bans anticipation.
+// ───────────────────────────────────────────────────────────────────────────
+
+var Formation act        = Formation.new()
+var string    state      = "none"
+var int       stAge      = 0     // bars since the state last advanced
+var int       armAge     = 0     // bars armed without a break
+var float     brkLevel   = 0.0   // key level at the moment of the break
+var bool      brkSurge   = false
+var float     retestWick = 0.0
+var line      neckLine   = na
+
+// Register a formation only while nothing is live. Ch VI-B treats overlapping
+// reads of the same price action as ONE setup, so a formation already past its
+// break is never displaced.
+if detected.kind != "none" and barstate.isconfirmed
+    bool fresh = state == "none"
+    bool upgrade = state == "armed" and detected.endBar > act.endBar and
+                   detected.qualityPts >= act.qualityPts
+    if (fresh or upgrade) and detected.endBar != act.endBar
+        act    := detected
+        state  := "armed"
+        armAge := 0
+        stAge  := 0
+        if i_showNeck
+            neckLine := line.new(act.startBar, act.neckAt(act.startBar),
+                 bar_index, act.neckAt(bar_index), xloc = xloc.bar_index,
+                 extend = extend.right, style = line.style_dashed, width = 2,
+                 color = act.bearish ? color.new(color.red, 30) : color.new(color.teal, 30))
+        if i_showLabels
+            label.new(act.endBar, act.apex,
+                 str.format("{0}  q{1}/2", act.kind, act.qualityPts),
+                 style = act.bearish ? label.style_label_down : label.style_label_up,
+                 color = color.new(color.gray, 25), textcolor = color.white, size = size.tiny)
+
+if not na(neckLine) and state != "none"
+    line.set_xy2(neckLine, bar_index, act.neckAt(bar_index))
+
+float neckNow  = state == "none" ? na : act.neckAt(bar_index)
+float closeBuf = i_closeBuf * atr
+// The flip-failure buffer must exceed the retest zone: price inside the zone
+// is retesting, not invalidating.
+float invalBuf = math.max(i_invalBuf, i_retestTol * 1.2) * atr
+
+// Ch V-A criterion 1 (REQUIRED): a break is a CLOSE beyond the key level.
+brokeNow = state == "armed" and not na(neckNow) and
+           (act.bearish ? close < neckNow - closeBuf : close > neckNow + closeBuf)
+volSurge = volume > i_volSurge * volAvg
+// Ch V-B: "Wick-only penetration [...] No close = no trade."
+wickOnly = state == "armed" and not na(neckNow) and not brokeNow and
+           (act.bearish ? (low < neckNow and close >= neckNow)
+                        : (high > neckNow and close <= neckNow))
+
+// Rejection candles the Ch VII Method B entry keys off: pin bar, engulfing, or
+// a strong wick rejection.
+body   = math.abs(close - open)
+rng    = math.max(high - low, tick)
+upWick = high - math.max(open, close)
+dnWick = math.min(open, close) - low
+rejectBear = (upWick >= 2 * body and body <= 0.35 * rng and upWick > dnWick) or
+             (close < open and close[1] > open[1] and body >= math.abs(close[1] - open[1]) and close < open[1]) or
+             (upWick / rng >= 0.5 and upWick > dnWick)
+rejectBull = (dnWick >= 2 * body and body <= 0.35 * rng and dnWick > upWick) or
+             (close > open and close[1] < open[1] and body >= math.abs(close[1] - open[1]) and close > open[1]) or
+             (dnWick / rng >= 0.5 and dnWick > upWick)
+
+if barstate.isconfirmed and state != "none"
+    stAge += 1
+    if state == "armed"
+        armAge += 1
+        if brokeNow and (not i_rejectLowVol or volSurge)
+            state    := "broken"
+            stAge    := 0
+            brkLevel := neckNow
+            brkSurge := volSurge
+        else if armAge > i_expiryBars
+            state := "none"
+    else
+        bool flipFailed = act.bearish ? close > neckNow + invalBuf : close < neckNow - invalBuf
+        bool structGone = act.bearish ? close > act.invalidation   : close < act.invalidation
+        if flipFailed or structGone
+            state := "none"
+        else if state == "broken"
+            bool touched = act.bearish ? high >= neckNow - i_retestTol * atr
+                                       : low  <= neckNow + i_retestTol * atr
+            if touched and (act.bearish ? rejectBear : rejectBull)
+                state      := "retested"
+                stAge      := 0
+                retestWick := act.bearish ? high : low
+            else if stAge > i_retestBars
+                state := "none"
+        else if state == "retested"
+            // Ch VII Method C: a follow-through close beyond the rejection bar.
+            bool follow = act.bearish ? (close < open and close < low[1])
+                                      : (close > open and close > high[1])
+            if follow
+                state := "ready"
+                stAge := 0
+            else if stAge > i_retestBars
+                state := "none"
+
+// ───────────────────────────────────────────────────────────────────────────
+//  LEVELS — Ch VII stops, Ch III-D / Ch IV-D targets, Ch X-B ladder
+// ───────────────────────────────────────────────────────────────────────────
+
+dirSign = state == "none" ? 0 : (act.bearish ? -1 : 1)
+entryPx = close
+
+// Method A stops beyond the formation's own invalidation; B and C sit just
+// beyond the retest wick, which is exactly where the structural flip fails.
+useStructStop = methodCode == "A" or state == "broken"
+rawStop = useStructStop ? act.invalidation + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
+                        : retestWick       + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
+
+stopFloor = math.max(math.max(i_minStopATR * atr, i_minStopPat * act.patAtr), 4 * tick)
+float stopPx = rawStop
+if state != "none" and math.abs(entryPx - rawStop) < stopFloor
+    stopPx := entryPx - dirSign * stopFloor
+
+stopDist = math.abs(entryPx - stopPx)
+
+// Ch III-D / Ch IV-D: the measured move is anchored to the BREAK price.
+tp1 = brkLevel + dirSign * act.height
+tp2 = entryPx  + dirSign * i_tp2R * stopDist
+tp3 = brkLevel + dirSign * 2.0 * act.height
+rr  = stopDist > 0 ? math.abs(tp1 - entryPx) / stopDist : 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  CONFLUENCE SCORING (Ch XI) — mandatory, out of 10
+// ───────────────────────────────────────────────────────────────────────────
+
+scPattern  = state == "none" ? 0 : act.qualityPts                  // 0-2
+scBreakout = brkSurge ? 2 : 1                                      // 0-2
+scRetest   = (state == "retested" or state == "ready") ? 1 : 0     // 0-1
+scHTF      = state == "none" ? 0 :
+             act.bearish ? (htfBear ? 2 : htfBull ? 0 : 1)
+                         : (htfBull ? 2 : htfBear ? 0 : 1)         // 0-2
+srNear     = state != "none" and
+             (math.abs(ctxHi - tp1) <= i_srTol * atr or math.abs(ctxLo - tp1) <= i_srTol * atr)
+scSR       = srNear ? 1 : 0                                        // 0-1
+scRR       = rr >= i_minRR ? 1 : 0                                 // 0-1, 0 = auto-skip
+pathClear  = state != "none" and (act.bearish ? pathLo > tp1 : pathHi < tp1)
+scPath     = pathClear ? 1 : 0                                     // 0-1
+scTriple   = act.triple ? 1 : 0                                    // Ch IV-D bonus
+
+score = math.min(10, scPattern + scBreakout + scRetest + scHTF + scSR + scRR + scPath + scTriple)
+grade = scRR == 0            ? "DISCARD"   :
+        score >= i_eliteScore ? "ELITE"    :
+        score >= i_minScore   ? "APPROVED" :
+        score >= 5            ? "WATCHLIST": "DISCARD"
+
+// ───────────────────────────────────────────────────────────────────────────
+//  RISK GATE (Ch VIII-A, RMG s.05)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Native daily halt — Ch VIII-A / Ch XII-A5: 3% daily = cease trading.
+strategy.risk.max_intraday_loss(i_dailyLoss, strategy.percent_of_equity)
+
+var float dayStartEq  = na
+var float weekStartEq = na
+if na(dayStartEq)
+    dayStartEq := strategy.equity
+if na(weekStartEq)
+    weekStartEq := strategy.equity
+if timeframe.change("D")
+    dayStartEq := strategy.equity
+if timeframe.change("W")
+    weekStartEq := strategy.equity
+
+dailyDD  = dayStartEq  > 0 ? math.max(0, (dayStartEq  - strategy.equity) / dayStartEq  * 100) : 0.0
+weeklyDD = weekStartEq > 0 ? math.max(0, (weekStartEq - strategy.equity) / weekStartEq * 100) : 0.0
+
+// RMG s.05: the 2-3% daily band enforces a position size cap.
+sizeFactor = dailyDD >= i_ddRestrict ? i_restrictMul : 1.0
+weeklyHalt = weeklyDD >= i_weeklyLoss
+
+inSession    = not na(time(timeframe.period, i_tradeSess))
+inBlackout   = i_useBlackout and not na(time(timeframe.period, i_blackout))
+counterTrend = state != "none" and (act.bearish ? htfBull : htfBear)
+
+riskPct = (grade == "ELITE" ? riskElite : riskApproved) * sizeFactor
+riskAmt = strategy.equity * riskPct / 100.0
+qty     = stopDist > 0 and pointVal > 0 ? math.max(0.0, riskAmt / (stopDist * pointVal)) : 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  EXECUTION (Ch VI-A step 6)
+// ───────────────────────────────────────────────────────────────────────────
+
+readyState = methodCode == "A" ? "broken" : methodCode == "B" ? "retested" : "ready"
+
+canEnter = barstate.isconfirmed and strategy.position_size == 0 and
+           state == readyState and stAge == 0 and
+           (grade == "ELITE" or grade == "APPROVED") and score >= i_minScore and
+           rr >= i_minRR and stopDist > 0 and stopDist <= i_maxStopATR * atr and
+           qty > 0 and not weeklyHalt and inSession and not inBlackout and
+           not (i_blockCounter and counterTrend)
+
+var string eId    = ""
+var float  ePrice = 0.0
+var float  eStop  = 0.0
+var float  eR     = 0.0
+var float  eTp1   = 0.0
+var float  eTp2   = 0.0
+var float  eTp3   = 0.0
+var float  eQty   = 0.0
+var int    eBar   = 0
+var bool   beDone = false
+var bool   tp1Hit = false
+var float  curStop = 0.0
+
+alertEntry = str.format(
+     '{{"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"{0}","tf":"{1}",' +
+     '"action":"{2}","pattern":"{3}","grade":"{4}","score":{5},"method":"{6}",' +
+     '"entry":{7},"sl":{8},"tp1":{9},"tp2":{10},"tp3":{11},"rr":{12},"risk_pct":{13},"qty":{14}}}',
+     syminfo.ticker, timeframe.period, dirSign > 0 ? "BUY" : "SELL", act.kind, grade,
+     score, methodCode, entryPx, stopPx, tp1, tp2, tp3,
+     math.round(rr, 2), math.round(riskPct, 2), qty)
+
+if canEnter
+    eId := dirSign > 0 ? "TFBS Long" : "TFBS Short"
+    strategy.entry(eId, dirSign > 0 ? strategy.long : strategy.short,
+         qty = qty, alert_message = alertEntry)
+    ePrice  := entryPx
+    eStop   := stopPx
+    curStop := stopPx
+    eR      := stopDist
+    eTp1    := tp1
+    eTp2    := tp2
+    eTp3    := tp3
+    eQty    := qty
+    eBar    := bar_index
+    beDone  := false
+    tp1Hit  := false
+    if i_showLabels
+        label.new(bar_index, dirSign > 0 ? low : high,
+             str.format("{0} {1}\n{2}/10 · {3}R · {4}%", grade, act.kind, score,
+                  math.round(rr, 1), math.round(riskPct, 2)),
+             style = dirSign > 0 ? label.style_label_up : label.style_label_down,
+             color = grade == "ELITE" ? color.new(color.orange, 10) : color.new(color.blue, 20),
+             textcolor = color.white, size = size.small)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  TRADE MANAGEMENT (Ch X)
+// ───────────────────────────────────────────────────────────────────────────
+
+inTrade = strategy.position_size != 0
+posSign = strategy.position_size > 0 ? 1 : strategy.position_size < 0 ? -1 : 0
+rNow    = inTrade and eR > 0 ? (close - ePrice) * posSign / eR : 0.0
+
+// Trail candidates are computed unconditionally above; only the choice is
+// made here.
+trailPx = i_trailMode == "EMA" ? emaTr - posSign * i_trailBuf * atr
+                               : (posSign > 0 ? swingLo - i_trailBuf * atr
+                                              : swingHi + i_trailBuf * atr)
+
+if inTrade
+    // Ch X-A: breakeven at 1R — and, per RMG s.03, never before it.
+    if not beDone and rNow >= i_beAtR
+        float be = ePrice + posSign * i_beOffset * eR
+        curStop := posSign > 0 ? math.max(curStop, be) : math.min(curStop, be)
+        beDone  := true
+
+    // Ch X-A: after 1.5R trail on the most recent swing or the 20-EMA.
+    // Ch XIV-A5: the stop only ever moves in your favour.
+    if rNow >= i_trailAtR
+        curStop := posSign > 0 ? math.max(curStop, trailPx) : math.min(curStop, trailPx)
+
+    if (posSign > 0 and high >= eTp1) or (posSign < 0 and low <= eTp1)
+        tp1Hit := true
+
+    // Ch X-B ladder: TP1 50% at the measured move, TP2 30% at the next S/R,
+    // TP3 the trailed runner.
+    strategy.exit("TP1", from_entry = eId, qty = eQty * i_tp1Pct / 100.0,
+         limit = eTp1, stop = curStop,
+         alert_message = '{"strategy":"TFBS","action":"TP1","symbol":"' + syminfo.ticker + '"}')
+    strategy.exit("TP2", from_entry = eId, qty = eQty * i_tp2Pct / 100.0,
+         limit = eTp2, stop = curStop,
+         alert_message = '{"strategy":"TFBS","action":"TP2","symbol":"' + syminfo.ticker + '"}')
+    strategy.exit("TP3", from_entry = eId, limit = eTp3, stop = curStop,
+         alert_message = '{"strategy":"TFBS","action":"TP3","symbol":"' + syminfo.ticker + '"}')
+
+    // ── Ch X-C early exit triggers ─────────────────────────────────────────
+    reclaimed = i_exitInval and not na(neckNow) and
+         (posSign > 0 ? close < neckNow - invalBuf : close > neckNow + invalBuf)
+    // A counter-pattern is one pointing the other way that has actually
+    // broken — not one merely sitting on the watchlist.
+    counterPat = i_exitCounter and not tp1Hit and state != "none" and
+         act.bearish == (posSign > 0) and
+         (state == "broken" or state == "retested" or state == "ready")
+    stale   = not tp1Hit and (bar_index - eBar) >= i_maxBars
+    newsOut = inBlackout and not beDone
+
+    if reclaimed or counterPat or stale or newsOut
+        string why = reclaimed ? "invalidation" : counterPat ? "counter-pattern" :
+                     stale ? "duration" : "news"
+        strategy.close_all(comment = "Ch X-C " + why,
+             alert_message = '{"strategy":"TFBS","action":"CLOSE","reason":"' + why +
+                             '","symbol":"' + syminfo.ticker + '"}')
+
+if not inTrade
+    curStop := 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  VISUALS
+// ───────────────────────────────────────────────────────────────────────────
+
+plot(i_showLevels and inTrade ? curStop : na, "Stop", color.new(color.red, 0),   1, plot.style_linebr)
+plot(i_showLevels and inTrade ? eTp1    : na, "TP1",  color.new(color.green, 0),  1, plot.style_linebr)
+plot(i_showLevels and inTrade ? eTp2    : na, "TP2",  color.new(color.green, 40), 1, plot.style_linebr)
+plot(i_showLevels and inTrade ? eTp3    : na, "TP3",  color.new(color.green, 70), 1, plot.style_linebr)
+
+plotshape(i_showWick and wickOnly, "Wick-only penetration (Ch V-B)",
+     shape.xcross, location.absolute, color.new(color.orange, 0), size = size.tiny)
+
+bgcolor(i_useBlackout and inBlackout ? color.new(color.red, 92) : na, title = "News blackout")
+
+if i_showPanel and barstate.islast
+    var table panel = table.new(position.top_right, 2, 9, border_width = 1,
+         frame_width = 1, frame_color = color.gray)
+    statusTxt = weeklyHalt ? "WEEKLY HALT" : dailyDD >= i_dailyLoss ? "DAILY HALT" :
+                dailyDD >= i_ddRestrict ? "RESTRICTED" : "ACTIVE"
+    statusCol = weeklyHalt or dailyDD >= i_dailyLoss ? color.red :
+                dailyDD >= i_ddRestrict ? color.orange : color.green
+    table.cell(panel, 0, 0, "TITAN TFBS", text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.small)
+    table.cell(panel, 1, 0, i_profile + " · " + methodCode, text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.small)
+    table.cell(panel, 0, 1, "Screen 1 bias", text_size = size.tiny)
+    table.cell(panel, 1, 1, htfBull ? "UP" : htfBear ? "DOWN" : "RANGE", text_size = size.tiny,
+         text_color = htfBull ? color.green : htfBear ? color.red : color.gray)
+    table.cell(panel, 0, 2, "Formation", text_size = size.tiny)
+    table.cell(panel, 1, 2, state == "none" ? "—" : act.kind + " q" + str.tostring(act.qualityPts),
+         text_size = size.tiny)
+    table.cell(panel, 0, 3, "State", text_size = size.tiny)
+    table.cell(panel, 1, 3, state, text_size = size.tiny)
+    table.cell(panel, 0, 4, "Score", text_size = size.tiny)
+    table.cell(panel, 1, 4, state == "none" ? "—" : str.tostring(score) + "/10 " + grade,
+         text_size = size.tiny,
+         text_color = grade == "ELITE" ? color.orange : grade == "APPROVED" ? color.green : color.gray)
+    table.cell(panel, 0, 5, "R:R to TP1", text_size = size.tiny)
+    table.cell(panel, 1, 5, state == "none" ? "—" : str.tostring(math.round(rr, 2)),
+         text_size = size.tiny, text_color = rr >= i_minRR ? color.green : color.red)
+    table.cell(panel, 0, 6, "Daily DD", text_size = size.tiny)
+    table.cell(panel, 1, 6, str.tostring(math.round(dailyDD, 2)) + "%", text_size = size.tiny,
+         text_color = dailyDD >= i_dailyLoss ? color.red :
+                      dailyDD >= i_ddRestrict ? color.orange : color.green)
+    table.cell(panel, 0, 7, "Weekly DD", text_size = size.tiny)
+    table.cell(panel, 1, 7, str.tostring(math.round(weeklyDD, 2)) + "%", text_size = size.tiny,
+         text_color = weeklyHalt ? color.red : color.green)
+    table.cell(panel, 0, 8, "Status", text_size = size.tiny)
+    table.cell(panel, 1, 8, statusTxt, text_color = statusCol, text_size = size.tiny)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  ALERTS — Ch VI-B watchlist transitions
+// ───────────────────────────────────────────────────────────────────────────
+
+if barstate.isconfirmed and state == "broken" and stAge == 0
+    alert(str.format("TFBS {0} {1} neckline BROKEN on {2} — score {3}/10 ({4})",
+         syminfo.ticker, act.kind, timeframe.period, score, grade), alert.freq_once_per_bar)
+
+if barstate.isconfirmed and state == "retested" and stAge == 0
+    alert(str.format("TFBS {0} {1} RETEST CONFIRMED on {2} — score {3}/10 ({4}), R:R {5}",
+         syminfo.ticker, act.kind, timeframe.period, score, grade, math.round(rr, 2)),
+         alert.freq_once_per_bar)

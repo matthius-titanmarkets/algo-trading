@@ -226,6 +226,20 @@ would actually trade rather than a parallel implementation of it.
 
 ---
 
+## TradingView
+
+`tradingview/titan_tfbs_strategy.pine` is a Pine Script v6 port for charting
+and alerts — paste it into the Pine Editor and run it on a 4H or 1H chart. It
+implements the same pipeline, scoring and Ch X exit architecture, and emits
+JSON alerts suitable for broker webhooks.
+
+It cannot enforce the portfolio-level rules — Pine sees one symbol, so Ch
+VIII-A's 5% aggregate open risk and the 2-per-sector correlated cap are outside
+its reach, and there is no economic calendar for Ch XII-A6. This engine remains
+the authority for those. See `tradingview/README.md`.
+
+---
+
 ## A note on the demo numbers
 
 `python -m titan_tfbs demo` runs on deterministic synthetic data containing
