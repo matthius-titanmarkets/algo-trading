@@ -1,0 +1,5 @@
+# The TFBS engine core runs on the Python standard library alone.
+# Everything below is optional tooling.
+
+PyYAML>=6.0        # only needed to read config/titan.yaml (JSON works without it)
+pytest>=7.0        # test suite

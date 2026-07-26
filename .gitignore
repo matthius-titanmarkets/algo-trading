@@ -1,0 +1,17 @@
+# Journal output (Ch XIII) — trade records belong to the account, not the repo
+journal/
+*.csv
+!tests/**/*.csv
+
+# Market data
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
