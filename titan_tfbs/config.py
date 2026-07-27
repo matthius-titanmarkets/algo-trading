@@ -613,6 +613,15 @@ def _to_plain(obj: Any) -> Any:
     return obj
 
 
+class MissingYAMLSupport(RuntimeError):
+    """Raised when a YAML config is requested but PyYAML is not installed.
+
+    Distinct from a generic error so callers can decide: fall back to the firm
+    defaults for an unedited shipped config, or refuse outright when the user
+    explicitly named a config whose contents they clearly intend to apply.
+    """
+
+
 def load_config(path: Optional[str | Path] = None) -> TitanConfig:
     """Load configuration from YAML or JSON; firm defaults when path is None."""
     if path is None:
@@ -625,8 +634,9 @@ def load_config(path: Optional[str | Path] = None) -> TitanConfig:
         try:
             import yaml  # type: ignore
         except ImportError as exc:  # pragma: no cover - environment dependent
-            raise RuntimeError(
-                "PyYAML is required to read YAML config; use a .json file instead"
+            raise MissingYAMLSupport(
+                f"PyYAML is required to read {p}. Install it with "
+                f"`pip install pyyaml`, or use a JSON config instead."
             ) from exc
         data = yaml.safe_load(text) or {}
     else:

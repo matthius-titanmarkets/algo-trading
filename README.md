@@ -25,25 +25,30 @@ passes on.
 ## Quick start
 
 ```bash
-# No third-party dependencies are needed for the engine itself.
-python -m titan_tfbs demo                     # deterministic synthetic run
-python -m titan_tfbs instruments              # the Ch I tradeable universe
-python -m titan_tfbs checklist                # the Appendix A checklist
+# Runs straight from a clone — no install, no dependencies.
+python main.py                       # run the bot and watch it trade
+python main.py --help                # every command and flag
+
+python main.py instruments           # the Ch I tradeable universe
+python main.py checklist             # the Appendix A checklist
 
 # Research: formations and scored setups, no orders
-python -m titan_tfbs scan --data ./data --symbols XAUUSD,NQ
+python main.py scan --data ./data --symbols XAUUSD,NQ
 
 # Full pipeline against history, with the risk gate and checklist applied
-python -m titan_tfbs backtest --data ./data --symbols XAUUSD,EURUSD \
+python main.py backtest --data ./data --symbols XAUUSD,EURUSD \
     --config config/titan.yaml --journal-dir ./journal
 ```
+
+`pip install -e .` additionally puts `titan-tfbs` on your PATH; every
+`python main.py <cmd>` above then works as `titan-tfbs <cmd>`.
 
 `--data` is a directory of `SYMBOL.csv` files with 5-minute OHLCV bars
 (`timestamp,open,high,low,close,volume`; most column spellings and both ISO and
 epoch timestamps are accepted). Every higher timeframe is derived from that one
 series, so the three screens can never disagree because of vendor differences.
 
-Run the tests with `python -m pytest tests/ -q` (150 tests, ~40s).
+Run the tests with `python -m pytest tests/ -q` (153 tests, ~43s).
 
 ---
 
@@ -216,8 +221,9 @@ titan_tfbs/
   backtest/            event-driven backtester, Ch XIII-B metrics
   bot.py               live orchestration
   cli.py               command-line interface
+main.py                the entry point — every command routes through here
 config/titan.yaml      the firm configuration
-tests/                 150 tests, one per enforced rule
+tests/                 153 tests, one per enforced rule
 ```
 
 The backtester replays candles through the *live* `TFBSBot` — same pipeline,

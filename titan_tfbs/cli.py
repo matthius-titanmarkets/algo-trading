@@ -30,8 +30,17 @@ BANNER = f"TITAN MARKETS LLC — Titan Formation Breakout System v{__version__}"
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    raw = list(sys.argv[1:] if argv is None else argv)
+
+    # `live` owns its own flag set, so hand it the rest of the command line
+    # untouched rather than teaching this parser about all of them.
+    if raw and raw[0] == "live":
+        from titan_tfbs.live import main as live_main
+
+        return live_main(raw[1:], prog="titan-tfbs live")
+
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw)
     if not getattr(args, "command", None):
         parser.print_help()
         return 1
@@ -89,6 +98,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_demo.add_argument("--json", action="store_true", help="emit JSON")
     p_demo.set_defaults(handler=_cmd_demo)
+
+    # Listed for the help text only — `live` is intercepted in main() and its
+    # arguments are passed straight through to the live runner.
+    sub.add_parser("live", add_help=False,
+         help="run the bot and watch it trade (`live --help` for its flags)")
 
     p_inst = sub.add_parser("instruments", help="list the firm's tradeable universe")
     p_inst.add_argument("--asset-class", help="filter by asset class")

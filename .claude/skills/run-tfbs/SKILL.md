@@ -10,13 +10,19 @@ PyYAML is only needed to read `config/titan.yaml` (JSON configs work without it)
 
 ## Setup
 
+No install is needed — `main.py` puts the repo on `sys.path` itself:
+
 ```bash
-pip install -e .          # puts `titan-tfbs` on PATH
+python main.py --help
+```
+
+To get the `titan-tfbs` command on PATH as well:
+
+```bash
+pip install -e .
 titan-tfbs --version
 # → TITAN MARKETS LLC — Titan Formation Breakout System v1.0.0
 ```
-
-Running via `python -m titan_tfbs ...` works identically without installing.
 
 ## Open the bot — a live session
 
@@ -25,8 +31,11 @@ streams 5M candles through the real `TFBSBot` and prints entries, exits and
 limit events as they happen, then reports account state at the close.
 
 ```bash
-python scripts/live_session.py --symbols XAUUSD,NQ --journal-dir ./journal
+python main.py --symbols XAUUSD,NQ --journal-dir ./journal
 ```
+
+Equivalent: `titan-tfbs live ...` and `python scripts/live_session.py ...` —
+all three call `titan_tfbs.live`.
 
 Expected shape (deterministic — same input, same output every run):
 
@@ -51,6 +60,8 @@ Useful flags: `--data ./data` to replay real CSVs instead of synthetic bars,
 to enable the Ch XII-A6 news blackout, `--quiet` for summary only.
 
 ## The CLI
+
+Every command works as `python main.py <cmd>` or `titan-tfbs <cmd>`:
 
 ```bash
 titan-tfbs demo                       # full pipeline, synthetic, ~20s
@@ -93,6 +104,11 @@ write_csv("data/XAUUSD.csv", firm_scenario(s, 2650.0, 0.022, seed=17, plan=COMPA
 - **Backtests want warmup.** `--warmup N` consumes N base bars to build the
   higher-timeframe screens before trading. `--warmup 0` is fine for synthetic
   scenarios that already begin with a long prior trend.
+- **PyYAML is optional, but only for the shipped config.** Without it,
+  `main.py` warns and falls back to the built-in firm defaults, which match
+  `config/titan.yaml` value for value. An *explicitly* passed `--config` never
+  falls back — it errors, because substituting different risk parameters for
+  the ones a trader asked for is not a graceful degradation.
 - **Demo numbers are not evidence.** Synthetic data is textbook formations
   followed by completed measured moves, so win rates near 100% and 20R+
   averages are properties of the data. Never report them as performance.
@@ -100,7 +116,7 @@ write_csv("data/XAUUSD.csv", firm_scenario(s, 2650.0, 0.022, seed=17, plan=COMPA
 ## Tests
 
 ```bash
-python -m pytest tests/ -q       # 151 tests, ~40s
+python -m pytest tests/ -q       # 153 tests, ~43s
 ```
 
 `tests/test_integration.py` is the slow one (~34s); it shares one compact

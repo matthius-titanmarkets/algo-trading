@@ -1,10 +1,14 @@
+# NOTE: these patterns are anchored with a leading slash on purpose. An
+# unanchored `journal/` or `data/` matches at ANY depth, which silently
+# excluded the titan_tfbs/journal/ and titan_tfbs/data/ subpackages from every
+# commit and left fresh clones unable to import the package.
+
 # Journal output (Ch XIII) — trade records belong to the account, not the repo
-journal/
-*.csv
-!tests/**/*.csv
+/journal/
+/*.csv
 
 # Market data
-data/
+/data/
 
 # Python
 __pycache__/
