@@ -127,7 +127,7 @@ i_expiryBars  = input.int(60, "Armed formation expiry (bars)", minval = 5, group
 // ── Entry methodology ──────────────────────────────────────────────────────
 i_method      = input.string("B — Standard (retest)", "Entry method",
      options = ["A — Aggressive (break close)", "B — Standard (retest)",
-                "C — Conservative (retest + follow-through)"],
+                 "C — Conservative (retest + follow-through)"],
      group = G_ENTRY, tooltip = "Ch VII: Method B is the FIRM DEFAULT. Titan Entry accounts " +
                "are forced onto Method C by the profile setting.")
 i_stopBuf     = input.float(0.15, "Stop buffer (ATR)", minval = 0.0, step = 0.05, group = G_ENTRY)
@@ -552,7 +552,7 @@ volSurge = volume > i_volSurge * volAvg
 // Ch V-B: "Wick-only penetration [...] No close = no trade."
 wickOnly = state == "armed" and not na(neckNow) and not brokeNow and
            (act.bearish ? (low < neckNow and close >= neckNow)
-                        : (high > neckNow and close <= neckNow))
+                         : (high > neckNow and close <= neckNow))
 
 // Rejection candles the Ch VII Method B entry keys off: pin bar, engulfing, or
 // a strong wick rejection.
@@ -648,9 +648,9 @@ scTriple   = act.triple ? 1 : 0                                    // Ch IV-D bo
 
 score = math.min(10, scPattern + scBreakout + scRetest + scHTF + scSR + scRR + scPath + scTriple)
 grade = scRR == 0            ? "DISCARD"   :
-        score >= i_eliteScore ? "ELITE"    :
-        score >= i_minScore   ? "APPROVED" :
-        score >= 5            ? "WATCHLIST": "DISCARD"
+         score >= i_eliteScore ? "ELITE"    :
+         score >= i_minScore   ? "APPROVED" :
+         score >= 5            ? "WATCHLIST": "DISCARD"
 
 // ───────────────────────────────────────────────────────────────────────────
 //  RISK GATE (Ch VIII-A, RMG s.05)
@@ -720,9 +720,14 @@ alertEntry = str.format(
      math.round(rr, 2), math.round(riskPct, 2), qty)
 
 if canEnter
-    eId := dirSign > 0 ? "TFBS Long" : "TFBS Short"
-    strategy.entry(eId, dirSign > 0 ? strategy.long : strategy.short,
-         qty = qty, alert_message = alertEntry)
+    // Branch rather than passing a ternary as the direction: strategy.entry
+    // wants the direction as a constant, not a computed series.
+    if dirSign > 0
+        eId := "TFBS Long"
+        strategy.entry("TFBS Long", strategy.long, qty = qty, alert_message = alertEntry)
+    else
+        eId := "TFBS Short"
+        strategy.entry("TFBS Short", strategy.short, qty = qty, alert_message = alertEntry)
     ePrice  := entryPx
     eStop   := stopPx
     curStop := stopPx
@@ -812,18 +817,22 @@ plot(i_showLevels and inTrade ? eTp1    : na, "TP1",  color.new(color.green, 0),
 plot(i_showLevels and inTrade ? eTp2    : na, "TP2",  color.new(color.green, 40), 1, plot.style_linebr)
 plot(i_showLevels and inTrade ? eTp3    : na, "TP3",  color.new(color.green, 70), 1, plot.style_linebr)
 
+// location.absolute needs a price series; this is a boolean flag, so it hangs
+// off the bar instead.
 plotshape(i_showWick and wickOnly, "Wick-only penetration (Ch V-B)",
-     shape.xcross, location.absolute, color.new(color.orange, 0), size = size.tiny)
+     shape.xcross, location.abovebar, color.new(color.orange, 0), size = size.tiny)
 
 bgcolor(i_useBlackout and inBlackout ? color.new(color.red, 92) : na, title = "News blackout")
 
+// Created once at global scope; only the cell contents are rewritten.
+var table panel = table.new(position.top_right, 2, 9, border_width = 1,
+     frame_width = 1, frame_color = color.gray)
+
 if i_showPanel and barstate.islast
-    var table panel = table.new(position.top_right, 2, 9, border_width = 1,
-         frame_width = 1, frame_color = color.gray)
     statusTxt = weeklyHalt ? "WEEKLY HALT" : dailyDD >= i_dailyLoss ? "DAILY HALT" :
-                dailyDD >= i_ddRestrict ? "RESTRICTED" : "ACTIVE"
+                 dailyDD >= i_ddRestrict ? "RESTRICTED" : "ACTIVE"
     statusCol = weeklyHalt or dailyDD >= i_dailyLoss ? color.red :
-                dailyDD >= i_ddRestrict ? color.orange : color.green
+                 dailyDD >= i_ddRestrict ? color.orange : color.green
     table.cell(panel, 0, 0, "TITAN TFBS", text_color = color.white,
          bgcolor = color.new(color.blue, 20), text_size = size.small)
     table.cell(panel, 1, 0, i_profile + " · " + methodCode, text_color = color.white,
