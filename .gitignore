@@ -19,3 +19,6 @@ dist/
 .pytest_cache/
 .venv/
 venv/
+
+# Generated backtest journals (regenerable; trade records)
+reports/journal/
