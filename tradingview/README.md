@@ -112,6 +112,30 @@ running the strategy on every symbol.
 
 ---
 
+## Checking edits without TradingView
+
+TradingView owns the only real Pine compiler, so edits made anywhere else are
+unverified until you paste them in. `check_pine.py` catches the traps that
+produce opaque errors:
+
+```bash
+python tradingview/check_pine.py
+# → titan_tfbs_strategy.pine: clean — no known Pine traps found
+```
+
+It checks continuation indents, block-body indents, bracket balance,
+`str.format` placeholders, `ta.*` calls stranded inside conditional branches,
+and `:=` on undeclared names. Exit 0 clean, 1 on findings.
+
+The one that matters most: **Pine reads a wrapped line indented by a multiple
+of four spaces as a new block**, which is what produced the
+`CE10013 — end of line without line continuation` error on the first version of
+this file. Block bodies are the exact inverse and must be at a multiple of four.
+Both directions are checked.
+
+It is a linter, not a compiler. Clean means the known traps are avoided, not
+that it builds.
+
 ## Before you trust the backtest
 
 - **Point value.** Sizing uses `syminfo.pointvalue`, which is TradingView's
