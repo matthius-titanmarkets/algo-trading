@@ -241,6 +241,38 @@ class TestJournal:
             assert bot.journal.score_correlation()
 
 
+class TestPackaging:
+    """A clone has to be able to import what it was given."""
+
+    def test_every_subpackage_is_tracked_by_git(self):
+        """An unanchored .gitignore rule once excluded titan_tfbs/data/ and
+        titan_tfbs/journal/ from every commit, leaving fresh clones with an
+        unimportable package. Nothing the package needs may be ignored."""
+        import subprocess
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        sources = sorted(
+            str(p.relative_to(root))
+            for p in (root / "titan_tfbs").rglob("*.py")
+            if "__pycache__" not in p.parts
+        )
+        assert sources, "no package sources found"
+        result = subprocess.run(
+            ["git", "check-ignore", "--no-index", *sources],
+            cwd=root, capture_output=True, text=True,
+        )
+        ignored = [ln for ln in result.stdout.splitlines() if ln.strip()]
+        assert not ignored, f"package sources excluded by .gitignore: {ignored}"
+
+    def test_the_entry_points_import(self):
+        """main.py, the CLI and the live runner must all be importable."""
+        import importlib
+
+        for module in ("titan_tfbs.cli", "titan_tfbs.live", "titan_tfbs.bot"):
+            assert importlib.import_module(module) is not None
+
+
 class TestDataFeeds:
     def test_csv_round_trip(self, tmp_path):
         candles = head_and_shoulders(START, 2650.0, 12, 55.0)[:100]
