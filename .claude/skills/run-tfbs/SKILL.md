@@ -67,6 +67,32 @@ Useful flags: `--data ./data` to replay real CSVs instead of synthetic bars,
 `--profile titan_entry` for the 0.5%/Method C rule set, `--calendar cal.csv`
 to enable the Ch XII-A6 news blackout, `--quiet` for summary only.
 
+## The research desk — "what is the bot looking at?"
+
+The live bot publishes a standing Ch IX brief at every session open and at the
+close: the Screen 1 bias per instrument, every formation on the Ch VI-B
+watchlist with its Ch V state and how far its trigger is in ATR, the nearest
+structure, the open book, and how much Ch VIII-A headroom is left.
+
+```bash
+python main.py --symbols GC,NQ                # brief at each session open (default)
+python main.py --symbols GC,NQ --brief open   # opening and closing brief only
+python main.py --symbols GC,NQ --brief off    # silence it
+
+python main.py research --symbols GC,NQ       # the same view, no orders at all
+python main.py research --data ./data --json  # machine-readable
+```
+
+Use `research` when asked what the bot *sees* or why it is not trading — its
+value is the boring days, where it says there is nothing to do and why (no
+completed formation, nearest trigger 26 ATR away, aggregate cap full).
+
+`strategy/desk.py` reads live engine state — the tracker's own watches, the
+risk manager's own verdict — so a brief cannot disagree with what the bot is
+acting on. Two traps to avoid when editing it: do not report an absent Screen 1
+bias as a blocker (Ch IX scores it neutral, 1/2 on the Ch XI HTF factor, and
+nothing is blocked), and do not recompute anything the engine already decided.
+
 ## The research note — "why did it take that trade?"
 
 Every executed trade gets a Ch XIII-A write-up, printed at the fill and
@@ -102,6 +128,7 @@ Every command works as `python main.py <cmd>` or `titan-tfbs <cmd>`:
 
 ```bash
 titan-tfbs demo                       # full pipeline, synthetic, ~20s
+titan-tfbs research                   # Ch IX desk brief, no orders
 titan-tfbs instruments                # Ch I universe + contract specs
 titan-tfbs checklist                  # Appendix A pre-trade checklist
 titan-tfbs config --config config/titan.yaml   # effective config as JSON

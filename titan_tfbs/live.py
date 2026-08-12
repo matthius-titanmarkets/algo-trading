@@ -76,6 +76,37 @@ def load_candles(
 #: How much of the Ch XIII-A research note the console prints per trade.
 RESEARCH_MODES = ("off", "summary", "full")
 
+#: When the Ch IX research desk publishes a standing market brief.
+BRIEF_MODES = ("off", "open", "daily")
+
+
+def interleave(candles: Dict[str, List[Candle]]) -> List[tuple]:
+    """Order every symbol's bars by time, rotating who goes first at each stamp.
+
+    The Ch VIII-A portfolio limits only bind correctly if symbols compete for
+    the same headroom in the order the market delivered them, so the replay is
+    interleaved rather than run symbol by symbol.
+
+    Sorting ties by symbol name looks harmless and is not. Once the portfolio
+    is near the aggregate risk cap, the symbol evaluated last at a given
+    timestamp is the one refused for lack of headroom — so a fixed tie-break
+    hands the last slice to whoever sorts first, at every contested bar, for
+    the whole run. Rotating the order by timestamp index keeps the replay
+    deterministic while giving each instrument an equal share of going first.
+    """
+    grouped: Dict[object, list] = {}
+    for symbol, bars in candles.items():
+        for bar in bars:
+            grouped.setdefault(bar.ts, []).append((symbol, bar))
+
+    stream: List[tuple] = []
+    for i, ts in enumerate(sorted(grouped)):
+        group = sorted(grouped[ts], key=lambda pair: pair[0])
+        offset = i % len(group)
+        rotated = group[offset:] + group[:offset]
+        stream.extend((ts, symbol, bar) for symbol, bar in rotated)
+    return stream
+
 
 def run_session(
     config: TitanConfig,
@@ -84,6 +115,7 @@ def run_session(
     quiet: bool = False,
     source_label: str = "",
     research: str = "summary",
+    brief: str = "daily",
 ) -> TFBSBot:
     """Replay ``candles`` through a live bot, printing as it trades."""
     if not candles:
@@ -138,19 +170,40 @@ def run_session(
         + (f"  ->  {config.journal.directory}/{config.journal.research_log}"
            if config.journal.enabled and config.journal.log_research else "")
     )
+    print(f"  desk      brief {brief}")
     print(f"\nstreaming {sum(len(c) for c in candles.values()):,} 5M candles...\n")
 
-    # Interleave symbols in strict timestamp order: the Ch VIII-A portfolio
-    # limits only bind correctly if symbols compete for the same headroom in
-    # the order the market delivered them.
-    stream = sorted(
-        ((c.ts, s, c) for s, cs in candles.items() for c in cs),
-        key=lambda row: (row[0], row[1]),
-    )
-    for _, symbol, candle in stream:
+    stream = interleave(candles)
+    opened = False
+    session_day = None
+
+    for ts, symbol, candle in stream:
         bot.on_candle(symbol, candle)
+        if brief == "off" or quiet:
+            continue
+        day = ts.date()
+        if session_day is None:
+            session_day = day
+            continue
+        if day == session_day:
+            continue
+        session_day = day
+        # The desk has nothing to say until the higher-timeframe screens are
+        # warm, so the opening brief waits for the first one with content
+        # rather than printing an empty board every day of the warmup.
+        note = bot.brief("session open")
+        if not note.has_content:
+            continue
+        if not opened:
+            note.title = "opening brief"
+            opened = True
+        elif brief == "open":
+            continue
+        print(f"{note.render(indent='  ')}\n", flush=True)
 
     bot.close_all()
+    if brief != "off" and not quiet:
+        print(f"\n{bot.brief('closing brief').render(indent='  ')}\n", flush=True)
     report(bot, config)
     return bot
 
@@ -205,6 +258,9 @@ def build_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
     ap.add_argument("--quiet", action="store_true", help="summary only, no event stream")
     ap.add_argument("--research", choices=RESEARCH_MODES, default="summary",
                     help="per-trade research note: off, summary (default) or full")
+    ap.add_argument("--brief", choices=BRIEF_MODES, default="daily",
+                    help="Ch IX desk brief: off, open (first and last only) or "
+                         "daily (default, at every session open)")
     return ap
 
 
@@ -270,5 +326,6 @@ def main(argv: Optional[Sequence[str]] = None, prog: Optional[str] = None) -> in
         quiet=args.quiet,
         source_label=args.data or "",
         research=args.research,
+        brief=args.brief,
     )
     return 0

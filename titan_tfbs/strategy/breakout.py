@@ -381,6 +381,19 @@ class BreakoutTracker:
                     transitions.append((watch, DEAD))
                 continue
 
+            if watch.state == READY:
+                # READY is a trigger state, not a resting state. The account
+                # may decline it — a Ch XI score below the gate, a failed
+                # Appendix A item, no Ch VIII-A headroom — and when it does,
+                # the setup has to go stale like any other. Without this the
+                # watch never expires: Ch VI-B's watchlist would carry it
+                # forever, and every later brief and snapshot would report a
+                # formation that can no longer produce a trade.
+                if watch.bars_since_break > cfg.retest_max_bars:
+                    watch.kill("entry_window_expired")
+                    transitions.append((watch, DEAD))
+                continue
+
         return transitions
 
     def _invalidated(

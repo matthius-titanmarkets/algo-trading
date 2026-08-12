@@ -33,6 +33,7 @@ from titan_tfbs.risk.compliance import ComplianceMonitor, Rule
 from titan_tfbs.risk.manager import RiskManager
 from titan_tfbs.strategy.breakout import BROKEN, READY, RETESTED
 from titan_tfbs.strategy.checklist import ChecklistResult, build_checklist
+from titan_tfbs.strategy.desk import DeskBrief, build_brief
 from titan_tfbs.strategy.research import ResearchNote, build_note
 from titan_tfbs.strategy.signals import TradeSignal
 from titan_tfbs.strategy.tfbs import SetupEvaluation, TFBSStrategy
@@ -95,7 +96,7 @@ class TFBSBot:
             self.config.execution,
             tp_config=self.config.trade_management,
             account_currency=self.config.account.currency,
-            atr_lookup=self._atr_for,
+            atr_lookup=self.atr_for,
         )
         self.trades = TradeManager(
             self.config.trade_management,
@@ -117,7 +118,12 @@ class TFBSBot:
         if self.on_event is not None:
             self.on_event(event)
 
-    def _atr_for(self, symbol: str) -> Optional[float]:
+    @property
+    def now(self) -> datetime:
+        """The engine's clock — the last candle timestamp it processed."""
+        return self._now
+
+    def atr_for(self, symbol: str) -> Optional[float]:
         store = self.stores.get(symbol.upper())
         if store is None:
             return None
@@ -197,7 +203,7 @@ class TFBSBot:
         entry_tf = instrument.timeframes.primary_entry_tf
         entry_series = store.get(entry_tf)
         recent = list(entry_series)[-120:] if entry_series else []
-        atr_value = self._atr_for(symbol) or 0.0
+        atr_value = self.atr_for(symbol) or 0.0
         levels = self.strategy.state_for(symbol).levels.get(
             instrument.timeframes.primary_pattern_tf, []
         )
@@ -491,6 +497,17 @@ class TFBSBot:
         self._mark_equity()
 
     # -- reporting ---------------------------------------------------------
+
+    def brief(self, title: str = "session") -> DeskBrief:
+        """The Ch IX research desk's current read on the market.
+
+        Standing analysis rather than a trade write-up: what each screen says,
+        which formations are being carried through the Ch V protocol and what
+        each still needs, where structure sits, and how much Ch VIII-A headroom
+        is left. Built from live engine state, so it cannot disagree with what
+        the bot is acting on.
+        """
+        return build_brief(self, title=title)
 
     def snapshot(self) -> Dict[str, object]:
         return {

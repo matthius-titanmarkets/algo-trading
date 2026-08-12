@@ -239,6 +239,43 @@ def equity_chart(curve: List, width=PAGE_W - 2 * MARGIN, height=58 * mm):
 # ---------------------------------------------------------------------------
 
 
+def _funnel_reading(bucket: str) -> str:
+    """What a dominant refusal category actually tells the reader.
+
+    These read very differently and must not be blurred: a funnel topped by
+    formations that never broke says the detector is finding shapes the market
+    does not confirm; one topped by breaks that never produced a trigger says
+    the entry method, not the detector, is where setups are being lost.
+    """
+    if "never arrived" in bucket:
+        return (
+            "These formations did break — the refusal is downstream of that. "
+            "Under the firm-default Method B a break only becomes a trade if "
+            "price returns to the level and is rejected there, and most breaks "
+            "simply run without looking back. That is Ch VII working as "
+            "written, but it is also the single largest source of missed "
+            "setups, and it is the number to weigh if Method A is ever "
+            "reconsidered."
+        )
+    if "unbroken" in bucket:
+        return (
+            "Most detected formations never became tradeable setups at all, "
+            "which is the intended shape for a system that grades a bare level "
+            "break as F (Ch VI-B): the neckline has to give way before "
+            "anything is actionable."
+        )
+    if "invalidated" in bucket:
+        return (
+            "Setups are being lost after the break to the Ch V-B flip failure "
+            "— price reclaiming the level rather than holding it. A high count "
+            "here points at the breakout filters, not the detector."
+        )
+    return (
+        "Worth reading against the rest of the funnel before treating the "
+        "parameters as tuned."
+    )
+
+
 def _research_card(trade: Dict, st) -> KeepTogether:
     """One trade's Ch XIII-A write-up: why it was taken, and how it ended.
 
@@ -589,18 +626,16 @@ def build(results: Dict, out_path: str) -> None:
             f"means instrument-level results are not independent.")
     if idle:
         findings.append(
-            f"<b>{', '.join(idle)} traded nothing.</b> Check whether those "
-            f"formations were expiring unbroken, being crowded out by the "
-            f"portfolio caps, or failing the confluence gate before treating the "
-            f"parameters as tuned.")
+            f"<b>{', '.join(idle)} traded nothing.</b> Check the funnel below "
+            f"for where those setups were lost — expiring unbroken, breaking "
+            f"without producing a trigger, crowded out by the portfolio caps, "
+            f"or failing the confluence gate — before treating the parameters "
+            f"as tuned.")
     top = next(iter(results["rejections"].items()), None)
     if top:
         findings.append(
             f"<b>The dominant refusal was &ldquo;{top[0]}&rdquo; ({top[1]} of "
-            f"{sum(results['rejections'].values())}).</b> A funnel this "
-            f"top-heavy means most detected formations never became tradeable "
-            f"setups at all, which is the intended shape for a system that grades "
-            f"a bare level break as F.")
+            f"{sum(results['rejections'].values())}).</b> {_funnel_reading(top[0])}")
 
     for f in findings:
         story.append(Paragraph(f"• {f}", st["Body"]))

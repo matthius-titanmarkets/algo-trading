@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T06:05:44.212873+00:00",
+  "generated": "2026-08-12T20:59:02.551114+00:00",
   "data_source": "synthetic",
   "synthetic": true,
   "config": {
@@ -220,7 +220,7 @@
     "ES",
     "RTY"
   ],
-  "setups_evaluated": 271,
+  "setups_evaluated": 300,
   "setups_executed": 13,
   "peak_open_risk_pct": 4.999863821527521,
   "status_timeline": [
@@ -275,24 +275,24 @@
     "losses": 0,
     "breakeven": 0,
     "win_rate_pct": 100.0,
-    "net_pnl": 3951183.98,
-    "gross_profit": 3951183.98,
+    "net_pnl": 3491523.98,
+    "gross_profit": 3491523.98,
     "gross_loss": 0,
     "profit_factor": Infinity,
-    "expectancy": 303937.23,
-    "expectancy_r": 20.353,
-    "avg_win": 303937.23,
+    "expectancy": 268578.77,
+    "expectancy_r": 19.519,
+    "avg_win": 268578.77,
     "avg_loss": 0.0,
-    "avg_r": 20.353,
+    "avg_r": 19.519,
     "best_r": 29.961,
     "worst_r": 9.239,
     "max_drawdown_pct": 20.962,
     "max_drawdown_amount": 212900.5,
-    "return_pct": 790.237,
+    "return_pct": 698.305,
     "starting_balance": 500000.0,
-    "ending_balance": 4451183.98,
+    "ending_balance": 3991523.98,
     "trades_per_week": 6.25,
-    "avg_bars_open": 40.7,
+    "avg_bars_open": 39.1,
     "by_pattern": {
       "H&S": {
         "trades": 4.0,
@@ -313,10 +313,10 @@
       "DT": {
         "trades": 4.0,
         "wins": 4.0,
-        "pnl": 2385223.0000000014,
-        "r_total": 84.65122196656893,
+        "pnl": 1925563.000000004,
+        "r_total": 73.80920231594243,
         "win_rate": 100.0,
-        "avg_r": 21.16280549164223
+        "avg_r": 18.452300578985607
       }
     },
     "by_grade": {
@@ -331,16 +331,16 @@
       "ELITE": {
         "trades": 6.0,
         "wins": 6.0,
-        "pnl": 3025493.000000001,
-        "r_total": 116.4942093579468,
+        "pnl": 2565833.0000000037,
+        "r_total": 105.65218970732028,
         "win_rate": 100.0,
-        "avg_r": 19.4157015596578
+        "avg_r": 17.60869828455338
       }
     },
     "by_exit_reason": {
       "trailing_stop": 5,
-      "early_exit_counter_pattern": 5,
-      "end_of_backtest": 3
+      "early_exit_counter_pattern": 6,
+      "end_of_backtest": 2
     },
     "firm_targets": {
       "win_rate_50_60": false,
@@ -359,8 +359,8 @@
       "wins": 3,
       "losses": 0,
       "win_rate": 100.0,
-      "pnl": 1410283.9999999986,
-      "avg_r": 22.275561499505585,
+      "pnl": 950624.0000000016,
+      "avg_r": 18.66155494929675,
       "profit_factor": Infinity,
       "screens": {
         "trend": "1D/1W",
@@ -1897,24 +1897,24 @@
       "score": 9,
       "entry": 2673.3,
       "initial_stop": 2675.90099141,
-      "stop": 2631.2,
+      "stop": 2658.7,
       "size": 163.0,
       "opened": "2026-01-19T06:15:00+00:00",
-      "closed": "2026-01-19T16:25:00+00:00",
-      "realized_pnl": 928774.0,
-      "realized_r": 21.915,
-      "max_favorable_r": 21.991,
+      "closed": "2026-01-19T11:05:00+00:00",
+      "realized_pnl": 469114.0,
+      "realized_r": 11.073,
+      "max_favorable_r": 11.14,
       "max_adverse_r": 0.0,
-      "bars_open": 40,
-      "close_reason": "end_of_backtest",
+      "bars_open": 19,
+      "close_reason": "early_exit_counter_pattern",
       "fills": [
         {
-          "ts": "2026-01-19T16:25:00+00:00",
-          "price": 2616.3,
+          "ts": "2026-01-19T11:05:00+00:00",
+          "price": 2644.5,
           "size": 163.0,
-          "reason": "end_of_backtest",
-          "pnl": 928774.0,
-          "r": 21.915
+          "reason": "early_exit_counter_pattern",
+          "pnl": 469114.0,
+          "r": 11.073
         }
       ],
       "pattern_tf": "1H",
@@ -2324,7 +2324,7 @@
     }
   ],
   "rejections": {
-    "Formation expired unbroken (Ch VI-B)": 208,
+    "Break made, trigger never arrived (Ch V / Ch VII)": 237,
     "Formation invalidated before entry (Ch V-B)": 36,
     "Trade cadence cap (Ch XIII-B)": 11,
     "Confluence score below 7/10 (Ch XI)": 3
@@ -2792,21 +2792,21 @@
     ],
     [
       "2026-01-19T11:55:00+00:00",
-      3494282.06
+      3421879.74
     ],
     [
       "2026-01-19T14:55:00+00:00",
-      4144175.48
+      3809764.25
     ],
     [
       "2026-01-19T16:25:00+00:00",
-      4451183.98
+      3991523.98
     ]
   ],
   "account": {
-    "balance": 4451183.98,
-    "equity": 4451183.98,
-    "peak_equity": 4451183.98,
+    "balance": 3991523.98,
+    "equity": 3991523.98,
+    "peak_equity": 3991523.98,
     "open_positions": 0,
     "aggregate_open_risk_pct": 0.0,
     "trades_today": 4,

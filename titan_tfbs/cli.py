@@ -96,6 +96,16 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_scan.set_defaults(handler=_cmd_scan)
 
+    p_research = sub.add_parser(
+        "research", parents=[common],
+        help="the Ch IX desk brief: market analysis, no orders",
+    )
+    p_research.add_argument(
+        "--data", help="directory of SYMBOL.csv 5M bars; omit for synthetic"
+    )
+    p_research.add_argument("--json", action="store_true", help="emit JSON")
+    p_research.set_defaults(handler=_cmd_research)
+
     p_demo = sub.add_parser(
         "demo", parents=[common], help="run the engine on deterministic synthetic data"
     )
@@ -258,6 +268,60 @@ def _cmd_scan(args) -> int:
             "\nThese have not been sized or checklisted — run `backtest` or the "
             "live bot to apply the Ch VIII risk gate and Appendix A."
         )
+    return 0
+
+
+def _cmd_research(args) -> int:
+    """The Ch IX research desk, run over history without trading it.
+
+    Ch IX puts the firm's research on the higher timeframes and it happens
+    whether or not a trade is available. This walks the bars to build those
+    screens exactly as the live bot does — same detector, same Ch V state
+    machine — then publishes one brief. Nothing is sized and nothing is
+    ordered, so the analysis can be reviewed before any capital is at risk.
+    """
+    from titan_tfbs.live import interleave, load_candles
+    from titan_tfbs.strategy.desk import build_brief
+
+    cfg = _config_from_args(args)
+    # Research places no orders; the journal exists for trades.
+    cfg.journal.enabled = False
+    symbols = _symbols(cfg)
+    if not args.data:
+        cfg.mtf.min_bias_bars = 20
+
+    candles = load_candles(symbols, args.data)
+    if not candles:
+        raise SystemExit("no candles to analyse")
+
+    bot = TFBSBot(
+        cfg,
+        symbols=list(candles),
+        start_time=min(c[0].ts for c in candles.values()),
+        journal=TradeJournal(cfg.journal),
+        calendar=_calendar_from_args(args),
+    )
+    # Drive the strategy, not the bot: the same detector and the same Ch V
+    # state machine build the screens, but `_try_execute` is never reached, so
+    # nothing is sized and no order exists. A research pass that opened
+    # positions would not be research.
+    stream = interleave(candles)
+    for ts, symbol, candle in stream:
+        store = bot.stores[symbol]
+        closed = store.push(candle)
+        bot.last_price[symbol] = candle.close
+        bot.strategy.on_candles(symbol, store, closed, ts)
+
+    brief = build_brief(bot, title="research pass", now=stream[-1][0])
+    if args.json:
+        print(json.dumps(brief.to_dict(), indent=2, default=str))
+        return 0
+    print(BANNER)
+    print(f"\n{brief.render()}")
+    print(
+        "\nNo orders were placed and nothing was sized — run `backtest` or the "
+        "live bot to apply the Ch VIII risk gate and Appendix A."
+    )
     return 0
 
 

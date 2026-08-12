@@ -31,7 +31,7 @@ from titan_tfbs.config import TitanConfig, TraderProfile, load_config
 from titan_tfbs.execution.orders import ExitReason
 from titan_tfbs.instruments import FIRM_PRIMARY_SYMBOLS, get_instrument
 from titan_tfbs.journal.journal import TradeJournal
-from titan_tfbs.live import SYNTHETIC, load_candles
+from titan_tfbs.live import SYNTHETIC, interleave, load_candles
 
 
 def main(argv=None) -> int:
@@ -68,7 +68,7 @@ def main(argv=None) -> int:
         journal=TradeJournal(cfg.journal),
     )
 
-    stream = _interleave(candles)
+    stream = interleave(candles)
     print(f"replaying {len(stream):,} bars across {len(candles)} instruments...")
 
     equity_curve: List = []
@@ -204,33 +204,6 @@ def main(argv=None) -> int:
     return 0
 
 
-def _interleave(candles: Dict[str, list]) -> list:
-    """Order every symbol's bars by time, rotating who goes first at each stamp.
-
-    Sorting ties by symbol name looks harmless and is not. Once the portfolio
-    is near the Ch VIII-A aggregate risk cap, the symbol evaluated last at a
-    given timestamp is the one refused for lack of headroom — so an
-    alphabetical tie-break hands the last slice to whoever sorts first, every
-    single bar, for the whole run. In an 8-instrument test where every stamp
-    carries all 8, that silently starves the symbol at the end of the alphabet.
-
-    Rotating the order by timestamp index keeps the replay deterministic while
-    giving each instrument an equal share of going first.
-    """
-    grouped: Dict[object, list] = {}
-    for symbol, bars in candles.items():
-        for bar in bars:
-            grouped.setdefault(bar.ts, []).append((symbol, bar))
-
-    stream: list = []
-    for i, ts in enumerate(sorted(grouped)):
-        group = sorted(grouped[ts], key=lambda pair: pair[0])
-        offset = i % len(group)
-        rotated = group[offset:] + group[:offset]
-        stream.extend((ts, symbol, bar) for symbol, bar in rotated)
-    return stream
-
-
 def _bucket(detail: str) -> str:
     """Collapse rejection messages into reportable categories."""
     d = detail.lower()
@@ -244,6 +217,10 @@ def _bucket(detail: str) -> str:
         ("already holding", "One position per instrument (Ch VIII-C)"),
         ("trades already taken", "Trade cadence cap (Ch XIII-B)"),
         ("invalidated", "Formation invalidated before entry (Ch V-B)"),
+        # The window reasons all describe a formation that DID break and then
+        # failed to produce its trigger in time — a different story from one
+        # that never broke at all, so it gets its own line.
+        ("window_expired", "Break made, trigger never arrived (Ch V / Ch VII)"),
         ("expired", "Formation expired unbroken (Ch VI-B)"),
         ("stop distance", "Stop too wide for a 2R target"),
         ("account", "Account halted by drawdown limits"),

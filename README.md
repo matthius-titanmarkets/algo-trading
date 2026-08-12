@@ -32,8 +32,9 @@ python main.py --help                # every command and flag
 python main.py instruments           # the Ch I tradeable universe
 python main.py checklist             # the Appendix A checklist
 
-# Research: formations and scored setups, no orders
-python main.py scan --data ./data --symbols GC,NQ
+# Research: the Ch IX desk brief, and formations/scored setups — no orders
+python main.py research --data ./data --symbols GC,NQ
+python main.py scan     --data ./data --symbols GC,NQ
 
 # Full pipeline against history, with the risk gate and checklist applied
 python main.py backtest --data ./data --symbols GC,EURUSD \
@@ -68,6 +69,45 @@ The engine implements Ch VI-A end to end:
 ```
 
 `bot.py` wires steps 5-7 to an account; `strategy/tfbs.py` owns 1-4.
+
+### The research desk — what the bot is looking at (Ch IX)
+
+Ch IX puts the firm's research on the higher timeframes, and it runs whether or
+not a trade is available — which is the part a bot normally throws away,
+because only fills are visible. The live bot publishes it as a standing brief
+at every session open and at the close:
+
+```
+──────────────────────────────────────────────────────────────────────────
+RESEARCH DESK — session open   2026-01-14 00:00 UTC
+──────────────────────────────────────────────────────────────────────────
+  account   $811,199 equity (balance $811,199) · ACTIVE
+  headroom  1.98% open of the 5% Ch VIII-A cap — 3.02% left to deploy
+  cadence   1 trade(s) today (cap 4), 3 this week (cap 8)
+
+  GC — 2,565.80   ATR(15M) 2.11 (0.08%)   Gold futures (COMEX)
+    Screen 1  1D up · 1W up -> bias UP (0.74)
+    Screen 2  2 formation(s) on the Ch VI-B watchlist, nearest trigger first
+              DB          1H   retested  q2/2  trigger 2,566.52, price 0.72 below it (0.34 ATR)
+                               needs a follow-through close beyond the rejection bar
+                               — Method B acts here
+              InvH&S      4H   armed     q1/2  trigger 2,612.40, price 46.60 below it (22.1 ATR)
+                               needs a CLOSE through the level — Ch V-A; anticipation
+                               is a Ch XII-A1 violation
+    Levels    resistance 2,614.46 (3 touches)  |  support 2,530.10 (2 touches)
+    Book      long 57 @ 2,565.80, +1.42R, stop 2,566.30
+    Waiting   DB on 1H is at the Method B trigger — the Ch XI score and the
+              Appendix A checklist decide it
+```
+
+Control it with `--brief {off,open,daily}`. `python main.py research` runs the
+same view over history and places no orders at all — the analysis view, before
+any capital is at risk.
+
+The point of the brief is the boring days: most of the time it says there is
+nothing to do, and *why* — no formation has completed, the nearest trigger is
+26 ATR away, or the Ch VIII-A cap is full. Like the per-trade note it is read
+off live engine state, so it cannot disagree with what the bot is acting on.
 
 ### Research notes — why it took the trade
 
@@ -245,7 +285,7 @@ titan_tfbs/
   core/                candles, timeframes, indicators, market structure
   patterns/            Ch III (H&S) and Ch IV (DT/DB/Triple)
   strategy/            Ch V breakout, Ch IX MTF, Ch XI scoring, Appendix A,
-                       Ch XIII-A research notes
+                       Ch IX desk briefs, Ch XIII-A research notes
   risk/                Ch VIII limits, RMG s.05 ladder, Ch XII compliance
   execution/           orders, broker interface, Ch X trade management
   data/                CSV / in-memory feeds, economic calendar, synthetic data

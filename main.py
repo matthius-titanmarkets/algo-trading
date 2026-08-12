@@ -8,6 +8,7 @@
     python main.py --research full          why it took each trade (Ch XIII-A)
 
     python main.py backtest --data ./data   replay history, full risk gate
+    python main.py research --data ./data   the Ch IX desk brief, no orders
     python main.py scan     --data ./data   formations and scored setups only
     python main.py demo                     deterministic end-to-end run
     python main.py instruments              the Ch I tradeable universe
@@ -32,7 +33,7 @@ MIN_PYTHON = (3, 10)
 #: Subcommands handled by titan_tfbs.cli. Anything else is treated as flags
 #: for the live runner, so `python main.py --data ./data` just works.
 CLI_COMMANDS = {
-    "backtest", "scan", "demo", "instruments", "checklist", "config",
+    "backtest", "scan", "research", "demo", "instruments", "checklist", "config",
 }
 LIVE_COMMANDS = {"live", "run", "bot"}
 
@@ -56,6 +57,7 @@ USAGE
 COMMANDS
   live | run          stream candles through the bot, printing every fill
   backtest            replay history through the full pipeline and risk gate
+  research            the Ch IX desk brief: bias, watchlist, structure, headroom
   scan                report formations and scored setups; places no orders
   demo                deterministic end-to-end run on synthetic data
   instruments         the Ch I tradeable universe with contract specs
@@ -67,6 +69,8 @@ EXAMPLES
   python main.py --symbols GC,EURUSD,NQ
   python main.py --data ./data --journal-dir ./journal
   python main.py --research full        why it took each trade, in full
+  python main.py --brief off            silence the desk brief
+  python main.py research --symbols GC,NQ
   python main.py backtest --data ./data --config config/titan.yaml
   python main.py scan --data ./data --symbols GC
 
