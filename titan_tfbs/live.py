@@ -33,6 +33,10 @@ from titan_tfbs.journal.journal import TradeJournal
 #: Price anchors and seeds for the synthetic fallback, per instrument. Used
 #: only when no --data directory is supplied.
 SYNTHETIC: Dict[str, tuple] = {
+    # GC carries the same anchor/seed the spot gold series used, so a run
+    # before and after the switch differs only by contract spec, not by price
+    # path.
+    "GC": (2650.0, 0.022, 17),
     "XAUUSD": (2650.0, 0.022, 17),
     "EURUSD": (1.0850, 0.013, 29),
     "GBPUSD": (1.2700, 0.013, 31),
@@ -168,8 +172,8 @@ def build_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
     )
     ap.add_argument("--config", default=None,
                     help="YAML or JSON config (default: config/titan.yaml)")
-    ap.add_argument("--symbols", default="XAUUSD,NQ",
-                    help="comma-separated symbols (default: XAUUSD,NQ)")
+    ap.add_argument("--symbols", default="GC,NQ",
+                    help="comma-separated symbols (default: GC,NQ)")
     ap.add_argument("--data", help="directory of SYMBOL.csv 5M bars; omit for synthetic")
     ap.add_argument("--calendar", help="economic calendar CSV/JSON (Ch XII-A6)")
     ap.add_argument("--journal-dir", default="journal",

@@ -320,8 +320,15 @@ for _sym, _name, _sector in [
 
 #: TFBS Ch I primary instruments — what the bot scans when no symbols are
 #: configured explicitly.
+#:
+#: FIRM DECISION, 2026: gold is traded as **GC futures (COMEX)** rather than
+#: spot XAUUSD. Ch I names XAUUSD under both Forex and Commodities, so this is
+#: a deliberate divergence from the manual as written: GC gives a centrally
+#: cleared contract with an exchange-published settlement price instead of a
+#: broker-specific spot quote. XAUUSD remains in the catalog and is still
+#: tradeable by explicit request; it is simply no longer scanned by default.
 FIRM_PRIMARY_SYMBOLS: List[str] = [
-    "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "CL", "NQ", "ES", "RTY",
+    "GC", "EURUSD", "GBPUSD", "USDJPY", "CL", "NQ", "ES", "RTY",
 ]
 
 

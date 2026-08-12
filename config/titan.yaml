@@ -23,7 +23,10 @@ account:
   consecutive_positive_trades: 0    # Ch XII-B counter
 
 # Instruments to scan. Empty = the firm's Ch I primaries.
-symbols: [XAUUSD, EURUSD, GBPUSD, USDJPY, CL, NQ, ES, RTY]
+# FIRM DECISION 2026: gold is traded as GC futures (COMEX), not spot
+# XAUUSD. Ch I names XAUUSD; this is a deliberate divergence. XAUUSD stays
+# in the catalog and can still be traded by naming it explicitly.
+symbols: [GC, EURUSD, GBPUSD, USDJPY, CL, NQ, ES, RTY]
 
 atr_period: 14                      # DERIVED — volatility scale used engine-wide
 

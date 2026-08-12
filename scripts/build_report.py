@@ -301,6 +301,17 @@ def build(results: Dict, out_path: str) -> None:
         "when instruments compete for the same headroom in the order the market "
         "delivered them. A per-instrument backtest run separately and summed would "
         "silently breach both.", st["Body"]))
+    story.append(Spacer(1, 3 * mm))
+    story.append(Paragraph(
+        "Where several instruments print a bar on the same timestamp — here, all "
+        "eight, on every one of the 4,230 stamps — the order within that timestamp "
+        "is <b>rotated</b> rather than fixed. A fixed order (alphabetical, or the "
+        "configured order) hands the last available slice of the 5% aggregate risk "
+        "headroom to the same instrument at every contested bar for the whole run, "
+        "which is an artefact of the harness rather than a property of the "
+        "instrument. Rotation keeps the replay deterministic while spreading that "
+        "advantage evenly. Per-instrument figures below should still be read as "
+        "portfolio contributions, not as standalone results.", st["Body"]))
     story.append(Spacer(1, 4 * mm))
 
     story.append(Paragraph("Multi-timeframe protocol (Ch IX)", st["H2"]))
@@ -413,7 +424,8 @@ def build(results: Dict, out_path: str) -> None:
             "quiet is not a failure — the Ch XI gate and the portfolio caps are "
             "designed to refuse setups — but a flagship instrument sitting out an "
             "entire run warrants inspection before the parameters are trusted. "
-            "See the rejection funnel overleaf for where its setups were stopped.",
+            "See the rejection funnel overleaf for where those setups were "
+            "stopped.",
             st, AMBER))
     story.append(Spacer(1, 5 * mm))
 
@@ -513,9 +525,10 @@ def build(results: Dict, out_path: str) -> None:
             f"means instrument-level results are not independent.")
     if idle:
         findings.append(
-            f"<b>{', '.join(idle)} traded nothing.</b> Check whether its formations "
-            f"were expiring unbroken, being crowded out by the portfolio caps, or "
-            f"failing the confluence gate before treating the parameters as tuned.")
+            f"<b>{', '.join(idle)} traded nothing.</b> Check whether those "
+            f"formations were expiring unbroken, being crowded out by the "
+            f"portfolio caps, or failing the confluence gate before treating the "
+            f"parameters as tuned.")
     top = next(iter(results["rejections"].items()), None)
     if top:
         findings.append(

@@ -3,7 +3,7 @@
 
     python main.py                          run the bot on synthetic data
     python main.py --data ./data            run it on your own 5M CSVs
-    python main.py --symbols XAUUSD,NQ      pick the universe
+    python main.py --symbols GC,NQ          pick the universe
     python main.py --profile titan_entry    trade the Ch XII-B rule set
 
     python main.py backtest --data ./data   replay history, full risk gate
@@ -63,10 +63,10 @@ COMMANDS
 
 EXAMPLES
   python main.py
-  python main.py --symbols XAUUSD,EURUSD,NQ
+  python main.py --symbols GC,EURUSD,NQ
   python main.py --data ./data --journal-dir ./journal
   python main.py backtest --data ./data --config config/titan.yaml
-  python main.py scan --data ./data --symbols XAUUSD
+  python main.py scan --data ./data --symbols GC
 
   Any command's own flags:  python main.py backtest --help
 

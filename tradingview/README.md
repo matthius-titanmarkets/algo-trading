@@ -96,10 +96,10 @@ Two further divergences worth knowing:
 Both the entries and the Ch X-B exits carry a JSON `alert_message`:
 
 ```json
-{"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"XAUUSD","tf":"60",
+{"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"GC1!","tf":"60",
  "action":"SELL","pattern":"H&S","grade":"APPROVED","score":8,"method":"B",
- "entry":2693.4,"sl":2695.54,"tp1":2634.88,"tp2":2626.84,"tp3":2577.37,
- "rr":29.57,"risk_pct":1.25,"qty":30.41}
+ "entry":2693.5,"sl":2695.54,"tp1":2634.88,"tp2":2626.84,"tp3":2577.37,
+ "rr":29.57,"risk_pct":1.25,"qty":30}
 ```
 
 To wire it up: right-click the chart → **Add alert** → Condition: your TFBS

@@ -31,7 +31,7 @@ streams 5M candles through the real `TFBSBot` and prints entries, exits and
 limit events as they happen, then reports account state at the close.
 
 ```bash
-python main.py --symbols XAUUSD,NQ --journal-dir ./journal
+python main.py --symbols GC,NQ --journal-dir ./journal
 ```
 
 Equivalent: `titan-tfbs live ...` and `python scripts/live_session.py ...` —
@@ -42,16 +42,18 @@ Expected shape (deterministic — same input, same output every run):
 ```
 TITAN MARKETS LLC — TFBS bot online
   account   TITAN-DESK-01  $500,000  profile=prop_desk
+  universe  GC, NQ
   entry     Method B (Ch VII)
   screens   1D/1W > 4H/1H > 15M/5M
+  source    deterministic synthetic data
 
 streaming 8,460 5M candles...
 
-  [2026-01-09 06:15] XAUUSD entry: APPROVED H&S short 30.41 @ 2693.40000 ...
-  [2026-01-09 16:25] XAUUSD exit: tp1_measured_move 15.2 @ 2635.03000 ...
+  [2026-01-09 06:15] GC entry: APPROVED H&S short 30 @ 2693.50000 SL 2695.54192 ...
+  [2026-01-09 16:25] GC exit: tp1_measured_move 15 @ 2635.00000 (+28.65R, +87,720.00)
 
 session closed at 2026-01-19T16:25
-  balance    $1,943,305.13   (from $500,000)
+  balance    $2,224,952.00   (from $500,000)
   status     ACTIVE   can_trade=True
 ```
 
@@ -69,8 +71,8 @@ titan-tfbs instruments                # Ch I universe + contract specs
 titan-tfbs checklist                  # Appendix A pre-trade checklist
 titan-tfbs config --config config/titan.yaml   # effective config as JSON
 
-titan-tfbs scan --data ./data --symbols XAUUSD,NQ
-titan-tfbs backtest --data ./data --symbols XAUUSD,EURUSD \
+titan-tfbs scan --data ./data --symbols GC,NQ
+titan-tfbs backtest --data ./data --symbols GC,EURUSD \
     --config config/titan.yaml --journal-dir ./journal
 ```
 
@@ -85,7 +87,7 @@ from datetime import datetime, timezone
 from titan_tfbs.data.synthetic import firm_scenario, COMPACT_PLAN
 from titan_tfbs.data.feed import write_csv
 s = datetime(2026, 1, 5, tzinfo=timezone.utc)
-write_csv("data/XAUUSD.csv", firm_scenario(s, 2650.0, 0.022, seed=17, plan=COMPACT_PLAN))
+write_csv("data/GC.csv", firm_scenario(s, 2650.0, 0.022, seed=17, plan=COMPACT_PLAN))
 ```
 
 ## Gotchas that will waste your time

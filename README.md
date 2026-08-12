@@ -33,10 +33,10 @@ python main.py instruments           # the Ch I tradeable universe
 python main.py checklist             # the Appendix A checklist
 
 # Research: formations and scored setups, no orders
-python main.py scan --data ./data --symbols XAUUSD,NQ
+python main.py scan --data ./data --symbols GC,NQ
 
 # Full pipeline against history, with the risk gate and checklist applied
-python main.py backtest --data ./data --symbols XAUUSD,EURUSD \
+python main.py backtest --data ./data --symbols GC,EURUSD \
     --config config/titan.yaml --journal-dir ./journal
 ```
 
@@ -148,10 +148,10 @@ from titan_tfbs import load_config
 from titan_tfbs.bot import TFBSBot
 
 cfg = load_config("config/titan.yaml")
-bot = TFBSBot(cfg, symbols=["XAUUSD", "NQ"])
+bot = TFBSBot(cfg, symbols=["GC", "NQ"])
 
 for candle in feed:                       # 5M bars
-    bot.on_candle("XAUUSD", candle)
+    bot.on_candle("GC", candle)
 
 print(bot.snapshot())
 ```

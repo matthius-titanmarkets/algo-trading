@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-11T17:35:55.349428+00:00",
+  "generated": "2026-08-12T03:16:47.415201+00:00",
   "data_source": "synthetic",
   "synthetic": true,
   "config": {
@@ -191,7 +191,7 @@
       "log_skipped_setups": true
     },
     "symbols": [
-      "XAUUSD",
+      "GC",
       "EURUSD",
       "GBPUSD",
       "USDJPY",
@@ -208,7 +208,7 @@
   },
   "bars": 33840,
   "symbols": [
-    "XAUUSD",
+    "GC",
     "EURUSD",
     "GBPUSD",
     "USDJPY",
@@ -219,7 +219,7 @@
   ],
   "setups_evaluated": 271,
   "setups_executed": 13,
-  "peak_open_risk_pct": 4.991233149091435,
+  "peak_open_risk_pct": 4.999863821527521,
   "status_timeline": [
     {
       "ts": "2026-01-09T16:15:00+00:00",
@@ -227,9 +227,9 @@
       "to": "PROBATION",
       "can_trade": false,
       "daily_dd_pct": 0.0,
-      "max_dd_pct": 11.608,
+      "max_dd_pct": 11.031,
       "breaches": [
-        "account drawdown 11.61% is in the probation band (RMG s.05)"
+        "account drawdown 11.03% is in the probation band (RMG s.05)"
       ]
     },
     {
@@ -238,20 +238,20 @@
       "to": "SUSPENDED",
       "can_trade": false,
       "daily_dd_pct": 0.0,
-      "max_dd_pct": 18.064,
+      "max_dd_pct": 17.183,
       "breaches": [
-        "account drawdown 18.06% exceeds the 12% suspension trigger (RMG s.05)"
+        "account drawdown 17.18% exceeds the 12% suspension trigger (RMG s.05)"
       ]
     },
     {
-      "ts": "2026-01-09T20:30:00+00:00",
+      "ts": "2026-01-09T19:35:00+00:00",
       "from": "SUSPENDED",
       "to": "PROBATION",
       "can_trade": false,
       "daily_dd_pct": 0.0,
-      "max_dd_pct": 10.84,
+      "max_dd_pct": 10.363,
       "breaches": [
-        "account drawdown 10.84% is in the probation band (RMG s.05)"
+        "account drawdown 10.36% is in the probation band (RMG s.05)"
       ]
     },
     {
@@ -260,11 +260,11 @@
       "to": "ACTIVE",
       "can_trade": true,
       "daily_dd_pct": 0.0,
-      "max_dd_pct": 4.598,
+      "max_dd_pct": 4.341,
       "breaches": []
     }
   ],
-  "halted_bars": 425,
+  "halted_bars": 428,
   "halted_pct": 1.26,
   "metrics": {
     "trades": 13,
@@ -272,72 +272,72 @@
     "losses": 0,
     "breakeven": 0,
     "win_rate_pct": 100.0,
-    "net_pnl": 2758587.98,
-    "gross_profit": 2758587.98,
+    "net_pnl": 3951183.98,
+    "gross_profit": 3951183.98,
     "gross_loss": 0,
     "profit_factor": Infinity,
-    "expectancy": 212199.08,
-    "expectancy_r": 17.333,
-    "avg_win": 212199.08,
+    "expectancy": 303937.23,
+    "expectancy_r": 20.353,
+    "avg_win": 303937.23,
     "avg_loss": 0.0,
-    "avg_r": 17.333,
-    "best_r": 24.574,
-    "worst_r": 6.448,
-    "max_drawdown_pct": 19.989,
-    "max_drawdown_amount": 194286.11,
-    "return_pct": 551.718,
+    "avg_r": 20.353,
+    "best_r": 29.961,
+    "worst_r": 9.239,
+    "max_drawdown_pct": 20.962,
+    "max_drawdown_amount": 212900.5,
+    "return_pct": 790.237,
     "starting_balance": 500000.0,
-    "ending_balance": 3258587.98,
+    "ending_balance": 4451183.98,
     "trades_per_week": 6.25,
-    "avg_bars_open": 38.2,
+    "avg_bars_open": 40.7,
     "by_pattern": {
       "H&S": {
-        "trades": 5.0,
-        "wins": 5.0,
-        "pnl": 1019914.9779282494,
-        "r_total": 111.08688081278544,
+        "trades": 4.0,
+        "wins": 4.0,
+        "pnl": 593040.9779282513,
+        "r_total": 98.80597261909463,
         "win_rate": 100.0,
-        "avg_r": 22.217376162557088
+        "avg_r": 24.701493154773658
       },
       "DB": {
         "trades": 5.0,
         "wins": 5.0,
-        "pnl": 734641.9999999997,
-        "r_total": 71.22046938992465,
+        "pnl": 972919.9999999987,
+        "r_total": 81.13298855815756,
         "win_rate": 100.0,
-        "avg_r": 14.244093877984929
+        "avg_r": 16.226597711631513
       },
       "DT": {
-        "trades": 3.0,
-        "wins": 3.0,
-        "pnl": 1004031.0000000003,
-        "r_total": 43.021352774735874,
+        "trades": 4.0,
+        "wins": 4.0,
+        "pnl": 2385223.0000000014,
+        "r_total": 84.65122196656893,
         "win_rate": 100.0,
-        "avg_r": 14.340450924911957
+        "avg_r": 21.16280549164223
       }
     },
     "by_grade": {
       "APPROVED": {
-        "trades": 9.0,
-        "wins": 9.0,
-        "pnl": 1435968.9779282482,
-        "r_total": 166.82472174506924,
+        "trades": 7.0,
+        "wins": 7.0,
+        "pnl": 925690.9779282502,
+        "r_total": 148.09597378587435,
         "win_rate": 100.0,
-        "avg_r": 18.53608019389658
+        "avg_r": 21.156567683696334
       },
       "ELITE": {
-        "trades": 4.0,
-        "wins": 4.0,
-        "pnl": 1322619.0000000012,
-        "r_total": 58.50398123237672,
+        "trades": 6.0,
+        "wins": 6.0,
+        "pnl": 3025493.000000001,
+        "r_total": 116.4942093579468,
         "win_rate": 100.0,
-        "avg_r": 14.62599530809418
+        "avg_r": 19.4157015596578
       }
     },
     "by_exit_reason": {
-      "trailing_stop": 4,
-      "early_exit_counter_pattern": 7,
-      "end_of_backtest": 2
+      "trailing_stop": 5,
+      "early_exit_counter_pattern": 5,
+      "end_of_backtest": 3
     },
     "firm_targets": {
       "win_rate_50_60": false,
@@ -348,17 +348,17 @@
     }
   },
   "by_symbol": {
-    "XAUUSD": {
-      "asset_class": "metals",
-      "description": "Spot Gold vs US Dollar \u2014 firm's flagship instrument",
+    "GC": {
+      "asset_class": "commodities",
+      "description": "Gold futures (COMEX)",
       "bars": 4230,
-      "trades": 0,
-      "wins": 0,
+      "trades": 3,
+      "wins": 3,
       "losses": 0,
-      "win_rate": 0.0,
-      "pnl": 0,
-      "avg_r": 0.0,
-      "profit_factor": 0.0,
+      "win_rate": 100.0,
+      "pnl": 1410283.9999999986,
+      "avg_r": 22.275561499505585,
+      "profit_factor": Infinity,
       "screens": {
         "trend": "1D/1W",
         "pattern": "4H/1H",
@@ -420,13 +420,13 @@
       "asset_class": "commodities",
       "description": "WTI Crude Oil futures (NYMEX)",
       "bars": 4230,
-      "trades": 3,
-      "wins": 3,
+      "trades": 0,
+      "wins": 0,
       "losses": 0,
-      "win_rate": 100.0,
-      "pnl": 685117.9999999979,
-      "avg_r": 15.760117651186405,
-      "profit_factor": Infinity,
+      "win_rate": 0.0,
+      "pnl": 0,
+      "avg_r": 0.0,
+      "profit_factor": 0.0,
       "screens": {
         "trend": "1D/1W",
         "pattern": "4H/1H",
@@ -441,7 +441,7 @@
       "wins": 2,
       "losses": 0,
       "win_rate": 100.0,
-      "pnl": 697455.0,
+      "pnl": 1110484.0,
       "avg_r": 22.891295596898097,
       "profit_factor": Infinity,
       "screens": {
@@ -454,13 +454,13 @@
       "asset_class": "indices",
       "description": "E-mini S&P 500 futures (CME)",
       "bars": 4230,
-      "trades": 1,
-      "wins": 1,
+      "trades": 0,
+      "wins": 0,
       "losses": 0,
-      "win_rate": 100.0,
-      "pnl": 375785.0,
-      "avg_r": 10.246040351641604,
-      "profit_factor": Infinity,
+      "win_rate": 0.0,
+      "pnl": 0,
+      "avg_r": 0.0,
+      "profit_factor": 0.0,
       "screens": {
         "trend": "1D",
         "pattern": "4H/1H",
@@ -471,12 +471,12 @@
       "asset_class": "indices",
       "description": "E-mini Russell 2000 futures (CME)",
       "bars": 4230,
-      "trades": 2,
-      "wins": 2,
+      "trades": 3,
+      "wins": 3,
       "losses": 0,
       "win_rate": 100.0,
-      "pnl": 466559.00000000105,
-      "avg_r": 20.02838808053174,
+      "pnl": 896745.0000000019,
+      "avg_r": 23.339321711374243,
       "profit_factor": Infinity,
       "screens": {
         "trend": "1D",
@@ -486,6 +486,71 @@
     }
   },
   "trades": [
+    {
+      "id": "T00001",
+      "symbol": "GC",
+      "direction": "short",
+      "pattern": "H&S",
+      "grade": "APPROVED",
+      "score": 7,
+      "entry": 2693.5,
+      "initial_stop": 2695.54191673,
+      "stop": 2635.3,
+      "size": 30.0,
+      "opened": "2026-01-09T06:15:00+00:00",
+      "closed": "2026-01-09T19:35:00+00:00",
+      "realized_pnl": 174840.0,
+      "realized_r": 28.552,
+      "max_favorable_r": 28.857,
+      "max_adverse_r": 0.0,
+      "bars_open": 53,
+      "close_reason": "trailing_stop",
+      "fills": [
+        {
+          "ts": "2026-01-09T16:25:00+00:00",
+          "price": 2635.0,
+          "size": 15.0,
+          "reason": "tp1_measured_move",
+          "pnl": 87720.0,
+          "r": 28.65
+        },
+        {
+          "ts": "2026-01-09T19:35:00+00:00",
+          "price": 2635.4,
+          "size": 15.0,
+          "reason": "trailing_stop",
+          "pnl": 87120.0,
+          "r": 28.454
+        }
+      ],
+      "pattern_tf": "1H",
+      "entry_method": "B",
+      "risk_pct": 1.2148570759339454,
+      "rr_planned": 29.565994583330703,
+      "tp1": 2634.875698512417,
+      "tp2": 2626.8412692711368,
+      "score_breakdown": {
+        "pattern_quality": 2,
+        "breakout_strength": 1,
+        "retest_confirm": 1,
+        "htf_alignment": 1,
+        "sr_confluence": 0,
+        "rr_ratio": 1,
+        "clean_path": 1,
+        "triple_bonus": 0,
+        "dual_pattern_bonus": 0,
+        "total": 7,
+        "reasons": {
+          "pattern_quality": "H&S: 5/5 preferred filters passed",
+          "breakout_strength": "candle close on 1.01x average volume (no surge)",
+          "retest_confirm": "clean retest with strong_wick rejection",
+          "htf_alignment": "higher timeframe neutral or screens diverging",
+          "sr_confluence": "no independent S/R at entry or target",
+          "rr_ratio": "29.57:1 to the measured move",
+          "clean_path": "no significant S/R between entry and TP1"
+        }
+      }
+    },
     {
       "id": "T00002",
       "symbol": "NQ",
@@ -547,71 +612,6 @@
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "22.20:1 to the measured move",
-          "clean_path": "no significant S/R between entry and TP1"
-        }
-      }
-    },
-    {
-      "id": "T00001",
-      "symbol": "CL",
-      "direction": "short",
-      "pattern": "H&S",
-      "grade": "APPROVED",
-      "score": 8,
-      "entry": 74.13,
-      "initial_stop": 74.23574902,
-      "stop": 71.97,
-      "size": 58.0,
-      "opened": "2026-01-09T06:15:00+00:00",
-      "closed": "2026-01-09T20:30:00+00:00",
-      "realized_pnl": 124004.0,
-      "realized_r": 20.237,
-      "max_favorable_r": 20.557,
-      "max_adverse_r": 0.0,
-      "bars_open": 57,
-      "close_reason": "trailing_stop",
-      "fills": [
-        {
-          "ts": "2026-01-09T16:20:00+00:00",
-          "price": 72.0,
-          "size": 29.0,
-          "reason": "tp1_measured_move",
-          "pnl": 61712.0,
-          "r": 20.142
-        },
-        {
-          "ts": "2026-01-09T20:30:00+00:00",
-          "price": 71.98,
-          "size": 29.0,
-          "reason": "trailing_stop",
-          "pnl": 62292.0,
-          "r": 20.331
-        }
-      ],
-      "pattern_tf": "1H",
-      "entry_method": "B",
-      "risk_pct": 1.234210746129486,
-      "rr_planned": 20.87481067133184,
-      "tp1": 71.99582357095893,
-      "tp2": 71.62584566555842,
-      "score_breakdown": {
-        "pattern_quality": 2,
-        "breakout_strength": 2,
-        "retest_confirm": 1,
-        "htf_alignment": 1,
-        "sr_confluence": 0,
-        "rr_ratio": 1,
-        "clean_path": 1,
-        "triple_bonus": 0,
-        "dual_pattern_bonus": 0,
-        "total": 8,
-        "reasons": {
-          "pattern_quality": "H&S: 5/5 preferred filters passed",
-          "breakout_strength": "close beyond level on 2.00x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
-          "htf_alignment": "higher timeframe neutral or screens diverging",
-          "sr_confluence": "no independent S/R at entry or target",
-          "rr_ratio": "20.87:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
       }
@@ -747,64 +747,64 @@
       }
     },
     {
-      "id": "T00008",
-      "symbol": "CL",
+      "id": "T00005",
+      "symbol": "RTY",
       "direction": "long",
       "pattern": "DB",
-      "grade": "APPROVED",
-      "score": 8,
-      "entry": 69.53,
-      "initial_stop": 69.30666939,
-      "stop": 70.4,
-      "size": 58.0,
-      "opened": "2026-01-14T12:00:00+00:00",
+      "grade": "ELITE",
+      "score": 9,
+      "entry": 2233.6,
+      "initial_stop": 2231.44274356,
+      "stop": 2255.6,
+      "size": 200.0,
+      "opened": "2026-01-14T11:45:00+00:00",
       "closed": "2026-01-14T19:05:00+00:00",
-      "realized_pnl": 83404.0,
-      "realized_r": 6.448,
-      "max_favorable_r": 6.485,
+      "realized_pnl": 333600.0,
+      "realized_r": 15.483,
+      "max_favorable_r": 15.527,
       "max_adverse_r": 0.0,
-      "bars_open": 28,
+      "bars_open": 29,
       "close_reason": "early_exit_counter_pattern",
       "fills": [
         {
           "ts": "2026-01-14T19:05:00+00:00",
-          "price": 70.97,
-          "size": 58.0,
+          "price": 2267.0,
+          "size": 200.0,
           "reason": "early_exit_counter_pattern",
-          "pnl": 83404.0,
-          "r": 6.448
+          "pnl": 333600.0,
+          "r": 15.483
         }
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 1.2377795665837246,
-      "rr_planned": 8.635422326917062,
-      "tp1": 71.41121179529034,
-      "tp2": 71.58076386083026,
+      "risk_pct": 1.992933271817951,
+      "rr_planned": 21.99819988774066,
+      "tp1": 2279.7011941217806,
+      "tp2": 2281.3907197556814,
       "score_breakdown": {
         "pattern_quality": 2,
         "breakout_strength": 2,
         "retest_confirm": 1,
         "htf_alignment": 1,
-        "sr_confluence": 0,
+        "sr_confluence": 1,
         "rr_ratio": 1,
         "clean_path": 1,
         "triple_bonus": 0,
         "dual_pattern_bonus": 0,
-        "total": 8,
+        "total": 9,
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
-          "breakout_strength": "close beyond level on 2.82x average volume",
-          "retest_confirm": "clean retest with engulfing rejection",
+          "breakout_strength": "close beyond level on 2.94x average volume",
+          "retest_confirm": "clean retest with pin_bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
-          "sr_confluence": "no independent S/R at entry or target",
-          "rr_ratio": "8.64:1 to the measured move",
+          "sr_confluence": "independent S/R at 2278.78620 (1 touches) aligns with entry/target",
+          "rr_ratio": "22.00:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
       }
     },
     {
-      "id": "T00005",
+      "id": "T00006",
       "symbol": "EURUSD",
       "direction": "long",
       "pattern": "DB",
@@ -834,7 +834,7 @@
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 0.6386849745960281,
+      "risk_pct": 0.6089805170100884,
       "rr_planned": 23.499989599267987,
       "tp1": 1.0785507183248892,
       "tp2": 1.0789495436955934,
@@ -861,7 +861,7 @@
       }
     },
     {
-      "id": "T00006",
+      "id": "T00007",
       "symbol": "GBPUSD",
       "direction": "long",
       "pattern": "DB",
@@ -891,7 +891,7 @@
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 0.7357889047070161,
+      "risk_pct": 0.7015682620092623,
       "rr_planned": 22.556695944381747,
       "tp1": 1.2617947500325561,
       "tp2": 1.2629469082668918,
@@ -918,40 +918,40 @@
       }
     },
     {
-      "id": "T00007",
-      "symbol": "RTY",
+      "id": "T00008",
+      "symbol": "GC",
       "direction": "long",
       "pattern": "DB",
       "grade": "ELITE",
       "score": 9,
-      "entry": 2233.6,
-      "initial_stop": 2231.44274356,
-      "stop": 2255.6,
-      "size": 191.0,
+      "entry": 2565.8,
+      "initial_stop": 2562.91497772,
+      "stop": 2613.1,
+      "size": 65.0,
       "opened": "2026-01-14T11:45:00+00:00",
-      "closed": "2026-01-14T19:05:00+00:00",
-      "realized_pnl": 318588.0,
-      "realized_r": 15.483,
-      "max_favorable_r": 15.527,
+      "closed": "2026-01-14T22:35:00+00:00",
+      "realized_pnl": 306670.0,
+      "realized_r": 16.36,
+      "max_favorable_r": 20.304,
       "max_adverse_r": 0.0,
-      "bars_open": 29,
-      "close_reason": "early_exit_counter_pattern",
+      "bars_open": 43,
+      "close_reason": "trailing_stop",
       "fills": [
         {
-          "ts": "2026-01-14T19:05:00+00:00",
-          "price": 2267.0,
-          "size": 191.0,
-          "reason": "early_exit_counter_pattern",
-          "pnl": 318588.0,
-          "r": 15.483
+          "ts": "2026-01-14T22:35:00+00:00",
+          "price": 2613.0,
+          "size": 65.0,
+          "reason": "trailing_stop",
+          "pnl": 306670.0,
+          "r": 16.36
         }
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 1.9960868336593627,
-      "rr_planned": 21.99819988774066,
-      "tp1": 2279.7011941217806,
-      "tp2": 2281.3907197556814,
+      "risk_pct": 1.6731316578463982,
+      "rr_planned": 21.683885310785026,
+      "tp1": 2625.829657162055,
+      "tp2": 2634.576599415961,
       "score_breakdown": {
         "pattern_quality": 2,
         "breakout_strength": 2,
@@ -965,11 +965,11 @@
         "total": 9,
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
-          "breakout_strength": "close beyond level on 2.94x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
+          "breakout_strength": "close beyond level on 2.59x average volume",
+          "retest_confirm": "clean retest with strong_wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
-          "sr_confluence": "independent S/R at 2278.78620 (1 touches) aligns with entry/target",
-          "rr_ratio": "22.00:1 to the measured move",
+          "sr_confluence": "independent S/R at 2625.34437 (2 touches) aligns with entry/target",
+          "rr_ratio": "21.68:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
       }
@@ -1005,7 +1005,7 @@
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 0.3918811817488084,
+      "risk_pct": 0.33396986492513037,
       "rr_planned": 23.627251081205525,
       "tp1": 1.0785507183248892,
       "tp2": 1.0787910836093988,
@@ -1032,7 +1032,7 @@
       }
     },
     {
-      "id": "T00012",
+      "id": "T00010",
       "symbol": "GBPUSD",
       "direction": "short",
       "pattern": "DT",
@@ -1062,7 +1062,7 @@
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 0.40976411449524364,
+      "risk_pct": 0.35242104583913664,
       "rr_planned": 25.46921401770171,
       "tp1": 1.2599115069120752,
       "tp2": 1.2578673240006388,
@@ -1091,39 +1091,39 @@
     },
     {
       "id": "T00011",
-      "symbol": "ES",
+      "symbol": "GC",
       "direction": "short",
       "pattern": "DT",
       "grade": "ELITE",
       "score": 9,
-      "entry": 5935.25,
-      "initial_stop": 5939.56874153,
-      "stop": 5912.5,
-      "size": 170.0,
+      "entry": 2673.3,
+      "initial_stop": 2675.90099141,
+      "stop": 2631.2,
+      "size": 163.0,
       "opened": "2026-01-19T06:15:00+00:00",
-      "closed": "2026-01-19T11:05:00+00:00",
-      "realized_pnl": 375785.0,
-      "realized_r": 10.246,
-      "max_favorable_r": 10.312,
+      "closed": "2026-01-19T16:25:00+00:00",
+      "realized_pnl": 928774.0,
+      "realized_r": 21.915,
+      "max_favorable_r": 21.991,
       "max_adverse_r": 0.0,
-      "bars_open": 19,
-      "close_reason": "early_exit_counter_pattern",
+      "bars_open": 40,
+      "close_reason": "end_of_backtest",
       "fills": [
         {
-          "ts": "2026-01-19T11:05:00+00:00",
-          "price": 5891.0,
-          "size": 170.0,
-          "reason": "early_exit_counter_pattern",
-          "pnl": 375785.0,
-          "r": 10.246
+          "ts": "2026-01-19T16:25:00+00:00",
+          "price": 2616.3,
+          "size": 163.0,
+          "reason": "end_of_backtest",
+          "pnl": 928774.0,
+          "r": 21.915
         }
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 1.9970649906712923,
-      "rr_planned": 22.17429758619727,
-      "tp1": 5844.677384333678,
-      "tp2": 5834.2500289587915,
+      "risk_pct": 1.9927120786504944,
+      "rr_planned": 23.384205917112748,
+      "tp1": 2615.2895538092157,
+      "tp2": 2606.007277706712,
       "score_breakdown": {
         "pattern_quality": 2,
         "breakout_strength": 2,
@@ -1137,83 +1137,18 @@
         "total": 9,
         "reasons": {
           "pattern_quality": "DT: 3/3 preferred filters passed",
-          "breakout_strength": "close beyond level on 2.74x average volume",
+          "breakout_strength": "close beyond level on 3.27x average volume",
           "retest_confirm": "clean retest with pin_bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
-          "sr_confluence": "independent S/R at 5846.33561 (1 touches) aligns with entry/target",
-          "rr_ratio": "22.17:1 to the measured move",
-          "clean_path": "1 opposing level(s) between entry and TP1 (nearest 5911.34582)",
+          "sr_confluence": "independent S/R at 2615.25115 (1 touches) aligns with entry/target",
+          "rr_ratio": "23.38:1 to the measured move",
+          "clean_path": "1 opposing level(s) between entry and TP1 (nearest 2657.91886)",
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
       }
     },
     {
-      "id": "T00010",
-      "symbol": "CL",
-      "direction": "short",
-      "pattern": "H&S",
-      "grade": "APPROVED",
-      "score": 7,
-      "entry": 73.35,
-      "initial_stop": 73.45318333,
-      "stop": 71.78,
-      "size": 225.0,
-      "opened": "2026-01-19T06:15:00+00:00",
-      "closed": "2026-01-19T16:25:00+00:00",
-      "realized_pnl": 477710.0,
-      "realized_r": 20.596,
-      "max_favorable_r": 20.964,
-      "max_adverse_r": 0.0,
-      "bars_open": 40,
-      "close_reason": "end_of_backtest",
-      "fills": [
-        {
-          "ts": "2026-01-19T16:10:00+00:00",
-          "price": 71.26,
-          "size": 112.0,
-          "reason": "tp1_measured_move",
-          "pnl": 233856.0,
-          "r": 20.255
-        },
-        {
-          "ts": "2026-01-19T16:25:00+00:00",
-          "price": 71.19,
-          "size": 113.0,
-          "reason": "end_of_backtest",
-          "pnl": 243854.0,
-          "r": 20.934
-        }
-      ],
-      "pattern_tf": "1H",
-      "entry_method": "B",
-      "risk_pct": 1.245384373540963,
-      "rr_planned": 22.32968637527934,
-      "tp1": 71.25204561095155,
-      "tp2": 71.17229987612347,
-      "score_breakdown": {
-        "pattern_quality": 2,
-        "breakout_strength": 2,
-        "retest_confirm": 1,
-        "htf_alignment": 1,
-        "sr_confluence": 0,
-        "rr_ratio": 1,
-        "clean_path": 0,
-        "triple_bonus": 0,
-        "dual_pattern_bonus": 0,
-        "total": 7,
-        "reasons": {
-          "pattern_quality": "H&S: 5/5 preferred filters passed",
-          "breakout_strength": "close beyond level on 2.62x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
-          "htf_alignment": "higher timeframe neutral or screens diverging",
-          "sr_confluence": "no independent S/R at entry or target",
-          "rr_ratio": "22.33:1 to the measured move",
-          "clean_path": "1 opposing level(s) between entry and TP1 (nearest 72.80694)"
-        }
-      }
-    },
-    {
-      "id": "T00013",
+      "id": "T00012",
       "symbol": "NQ",
       "direction": "short",
       "pattern": "DT",
@@ -1222,10 +1157,10 @@
       "entry": 21655.75,
       "initial_stop": 21672.3096619,
       "stop": 21365.5,
-      "size": 72.0,
+      "size": 125.0,
       "opened": "2026-01-19T06:15:00+00:00",
       "closed": "2026-01-19T16:25:00+00:00",
-      "realized_pnl": 561096.0,
+      "realized_pnl": 974125.0,
       "realized_r": 23.536,
       "max_favorable_r": 23.575,
       "max_adverse_r": 0.0,
@@ -1235,15 +1170,15 @@
         {
           "ts": "2026-01-19T16:25:00+00:00",
           "price": 21266.0,
-          "size": 72.0,
+          "size": 125.0,
           "reason": "end_of_backtest",
-          "pnl": 561096.0,
+          "pnl": 974125.0,
           "r": 23.536
         }
       ],
       "pattern_tf": "1H",
       "entry_method": "B",
-      "risk_pct": 1.3390196703839352,
+      "risk_pct": 1.99936638994212,
       "rr_planned": 24.165034718970706,
       "tp1": 21261.55459643985,
       "tp2": 21208.655312047966,
@@ -1269,15 +1204,87 @@
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
       }
+    },
+    {
+      "id": "T00013",
+      "symbol": "RTY",
+      "direction": "short",
+      "pattern": "DT",
+      "grade": "ELITE",
+      "score": 9,
+      "entry": 2318.3,
+      "initial_stop": 2319.81576787,
+      "stop": 2284.5,
+      "size": 183.0,
+      "opened": "2026-01-19T06:15:00+00:00",
+      "closed": "2026-01-19T16:25:00+00:00",
+      "realized_pnl": 415174.0,
+      "realized_r": 29.961,
+      "max_favorable_r": 30.515,
+      "max_adverse_r": 0.0,
+      "bars_open": 40,
+      "close_reason": "end_of_backtest",
+      "fills": [
+        {
+          "ts": "2026-01-19T16:10:00+00:00",
+          "price": 2273.3,
+          "size": 91.0,
+          "reason": "tp1_measured_move",
+          "pnl": 204568.0,
+          "r": 29.688
+        },
+        {
+          "ts": "2026-01-19T16:20:00+00:00",
+          "price": 2272.6,
+          "size": 54.0,
+          "reason": "tp2_next_sr",
+          "pnl": 123282.0,
+          "r": 30.15
+        },
+        {
+          "ts": "2026-01-19T16:25:00+00:00",
+          "price": 2272.3,
+          "size": 38.0,
+          "reason": "end_of_backtest",
+          "pnl": 87324.0,
+          "r": 30.348
+        }
+      ],
+      "pattern_tf": "1H",
+      "entry_method": "B",
+      "risk_pct": 0.6553643070957699,
+      "rr_planned": 32.269391436012306,
+      "tp1": 2273.2474522563925,
+      "tp2": 2272.5230202076673,
+      "score_breakdown": {
+        "pattern_quality": 2,
+        "breakout_strength": 2,
+        "retest_confirm": 1,
+        "htf_alignment": 1,
+        "sr_confluence": 1,
+        "rr_ratio": 1,
+        "clean_path": 0,
+        "triple_bonus": 0,
+        "dual_pattern_bonus": 1,
+        "total": 9,
+        "reasons": {
+          "pattern_quality": "DT: 3/3 preferred filters passed",
+          "breakout_strength": "close beyond level on 2.41x average volume",
+          "retest_confirm": "clean retest with strong_wick rejection",
+          "htf_alignment": "higher timeframe neutral or screens diverging",
+          "sr_confluence": "independent S/R at 2318.00876 (1 touches) aligns with entry/target",
+          "rr_ratio": "32.27:1 to the measured move",
+          "clean_path": "1 opposing level(s) between entry and TP1 (nearest 2305.66943)",
+          "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
+        }
+      }
     }
   ],
   "rejections": {
     "Formation expired unbroken (Ch VI-B)": 208,
     "Formation invalidated before entry (Ch V-B)": 36,
-    "Trade cadence cap (Ch XIII-B)": 9,
-    "Confluence score below 7/10 (Ch XI)": 3,
-    "Correlated exposure cap (Ch VIII-A)": 1,
-    "One position per instrument (Ch VIII-C)": 1
+    "Trade cadence cap (Ch XIII-B)": 11,
+    "Confluence score below 7/10 (Ch XI)": 3
   },
   "equity_curve": [
     [
@@ -1418,345 +1425,345 @@
     ],
     [
       "2026-01-09T08:55:00+00:00",
-      671535.6
+      686024.75
     ],
     [
       "2026-01-09T11:55:00+00:00",
-      822893.96
+      851995.98
     ],
     [
       "2026-01-09T14:55:00+00:00",
-      971980.35
+      1015669.48
     ],
     [
       "2026-01-09T17:55:00+00:00",
-      777694.25
+      802768.98
     ],
     [
       "2026-01-09T20:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-09T23:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T02:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T05:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T08:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T11:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T14:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T17:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T20:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-10T23:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T02:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T05:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T08:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T11:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T14:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T17:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T20:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-11T23:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T02:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T05:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T08:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T11:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T14:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T17:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T20:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-12T23:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T02:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T05:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T08:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T11:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T14:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T17:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T20:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-13T23:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-14T02:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-14T05:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-14T08:55:00+00:00",
-      1042204.98
+      1093040.98
     ],
     [
       "2026-01-14T11:55:00+00:00",
-      1107317.52
+      1190517.31
     ],
     [
       "2026-01-14T14:55:00+00:00",
-      1340000.56
+      1499055.68
     ],
     [
       "2026-01-14T17:55:00+00:00",
-      1581682.73
+      1818763.99
     ],
     [
       "2026-01-14T20:55:00+00:00",
-      1667296.98
+      1993541.56
     ],
     [
       "2026-01-14T23:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T02:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T05:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T08:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T11:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T14:55:00+00:00",
-      1667296.98
+      1956410.98
     ],
     [
       "2026-01-15T17:55:00+00:00",
-      1676514.67
+      1965628.67
     ],
     [
       "2026-01-15T20:55:00+00:00",
-      1712680.32
+      2001794.32
     ],
     [
       "2026-01-15T23:55:00+00:00",
-      1748745.76
+      2037859.76
     ],
     [
       "2026-01-16T02:55:00+00:00",
-      1786641.04
+      2075755.04
     ],
     [
       "2026-01-16T05:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T08:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T11:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T14:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T17:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T20:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-16T23:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T02:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T05:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T08:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T11:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T14:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T17:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T20:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-17T23:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T02:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T05:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T08:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T11:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T14:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T17:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T20:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-18T23:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-19T02:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-19T05:55:00+00:00",
-      1776846.98
+      2065960.98
     ],
     [
       "2026-01-19T08:55:00+00:00",
-      2381937.77
+      2837091.07
     ],
     [
       "2026-01-19T11:55:00+00:00",
-      2828764.16
+      3494282.06
     ],
     [
       "2026-01-19T14:55:00+00:00",
-      3122104.65
+      4144175.48
     ],
     [
       "2026-01-19T16:25:00+00:00",
-      3258587.98
+      4451183.98
     ]
   ],
   "account": {
-    "balance": 3258587.98,
-    "equity": 3258587.98,
-    "peak_equity": 3259069.38,
+    "balance": 4451183.98,
+    "equity": 4451183.98,
+    "peak_equity": 4451183.98,
     "open_positions": 0,
     "aggregate_open_risk_pct": 0.0,
     "trades_today": 4,
@@ -1768,7 +1775,7 @@
       "daily_dd_pct": 0.0,
       "weekly_dd_pct": 0.0,
       "monthly_dd_pct": 0.0,
-      "max_dd_pct": 0.015,
+      "max_dd_pct": 0.0,
       "reasons": [],
       "breaches": []
     },

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Thin wrapper kept for the documented path; the logic lives in the package.
 
-    python scripts/live_session.py --symbols XAUUSD,NQ
+    python scripts/live_session.py --symbols GC,NQ
 
 Equivalent to `python main.py` and `titan-tfbs live`.
 """

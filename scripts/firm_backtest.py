@@ -68,10 +68,7 @@ def main(argv=None) -> int:
         journal=TradeJournal(cfg.journal),
     )
 
-    stream = sorted(
-        ((c.ts, s, c) for s, cs in candles.items() for c in cs),
-        key=lambda row: (row[0], row[1]),
-    )
+    stream = _interleave(candles)
     print(f"replaying {len(stream):,} bars across {len(candles)} instruments...")
 
     equity_curve: List = []
@@ -201,6 +198,33 @@ def main(argv=None) -> int:
           f"(Ch VIII-A cap {cfg.risk.max_aggregate_open_risk_pct:.0f}%)")
     print(f"-> {out}")
     return 0
+
+
+def _interleave(candles: Dict[str, list]) -> list:
+    """Order every symbol's bars by time, rotating who goes first at each stamp.
+
+    Sorting ties by symbol name looks harmless and is not. Once the portfolio
+    is near the Ch VIII-A aggregate risk cap, the symbol evaluated last at a
+    given timestamp is the one refused for lack of headroom — so an
+    alphabetical tie-break hands the last slice to whoever sorts first, every
+    single bar, for the whole run. In an 8-instrument test where every stamp
+    carries all 8, that silently starves the symbol at the end of the alphabet.
+
+    Rotating the order by timestamp index keeps the replay deterministic while
+    giving each instrument an equal share of going first.
+    """
+    grouped: Dict[object, list] = {}
+    for symbol, bars in candles.items():
+        for bar in bars:
+            grouped.setdefault(bar.ts, []).append((symbol, bar))
+
+    stream: list = []
+    for i, ts in enumerate(sorted(grouped)):
+        group = sorted(grouped[ts], key=lambda pair: pair[0])
+        offset = i % len(group)
+        rotated = group[offset:] + group[:offset]
+        stream.extend((ts, symbol, bar) for symbol, bar in rotated)
+    return stream
 
 
 def _bucket(detail: str) -> str:

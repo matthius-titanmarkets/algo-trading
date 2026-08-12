@@ -172,6 +172,10 @@ def build(results: Dict, out_path: str) -> None:
         "No economic calendar supplied, so the Ch XII-A6 news blackout was inactive.",
         "Instruments were replayed interleaved in timestamp order so the Ch VIII-A "
         "portfolio caps bind correctly.",
+        "Order within a shared timestamp is rotated, not fixed: a fixed order gives "
+        "the same instrument the last slice of the 5% risk headroom at every "
+        "contested bar. Per-instrument rows are portfolio contributions, not "
+        "standalone results.",
     ]:
         ws.cell(row=row, column=1, value="•").font = Font(name=FONT, size=9)
         c = ws.cell(row=row, column=2, value=note)

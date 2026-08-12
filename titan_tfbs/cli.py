@@ -1,8 +1,8 @@
 """Command-line interface.
 
     python -m titan_tfbs demo
-    python -m titan_tfbs backtest --data ./data --symbols XAUUSD,NQ
-    python -m titan_tfbs scan --data ./data --symbols XAUUSD
+    python -m titan_tfbs backtest --data ./data --symbols GC,NQ
+    python -m titan_tfbs scan --data ./data --symbols GC
     python -m titan_tfbs instruments
     python -m titan_tfbs checklist
     python -m titan_tfbs config --config config/titan.yaml
@@ -245,7 +245,7 @@ def _cmd_demo(args) -> int:
     cfg = _config_from_args(args)
     start = datetime(2026, 1, 5, tzinfo=timezone.utc)
     data = {
-        "XAUUSD": firm_scenario(start, 2650.0, height_pct=0.022, seed=17),
+        "GC": firm_scenario(start, 2650.0, height_pct=0.022, seed=17),
         "EURUSD": firm_scenario(start, 1.0850, height_pct=0.013, seed=29),
         "NQ": firm_scenario(start, 21500.0, height_pct=0.018, seed=41),
     }
