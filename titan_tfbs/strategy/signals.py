@@ -197,6 +197,10 @@ class TradeSignal:
     position_size: float = 0.0
     #: Appendix A outcome; a signal never executes with a failed mandatory item.
     checklist: Optional[object] = None
+    #: :class:`~titan_tfbs.strategy.research.ResearchNote` — the Ch XIII-A
+    #: write-up of why this setup qualified. Attached by the bot once the
+    #: signal is complete, so the note always describes the decision as taken.
+    research: Optional[object] = None
     notes: List[str] = field(default_factory=list)
     #: Set when the pipeline rejected the setup, for the Ch XII-A4 journal
     #: requirement that skipped trades are logged too.
@@ -241,5 +245,6 @@ class TradeSignal:
             },
             "created": self.created_ts.isoformat(),
             "score_breakdown": self.score.breakdown(),
+            "research": self.research.to_dict() if self.research else None,
             "notes": list(self.notes),
         }

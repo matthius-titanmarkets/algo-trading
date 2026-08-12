@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T03:16:47.415201+00:00",
+  "generated": "2026-08-12T06:05:44.212873+00:00",
   "data_source": "synthetic",
   "synthetic": true,
   "config": {
@@ -188,7 +188,10 @@
       "trade_log": "tfbs_trades.csv",
       "signal_log": "tfbs_signals.csv",
       "equity_log": "tfbs_equity.csv",
-      "log_skipped_setups": true
+      "research_log": "tfbs_research.md",
+      "log_skipped_setups": true,
+      "log_research": true,
+      "log_research_for_skipped": false
     },
     "symbols": [
       "GC",
@@ -543,12 +546,94 @@
         "reasons": {
           "pattern_quality": "H&S: 5/5 preferred filters passed",
           "breakout_strength": "candle close on 1.01x average volume (no surge)",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "29.57:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "GC",
+        "ts": "2026-01-09T06:15:00+00:00",
+        "taken": true,
+        "headline": "GC SHORT \u00b7 Head & Shoulders on 1H \u00b7 APPROVED 7/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Head & Shoulders completed on the 1H over 34 bars (three pushes higher, the middle one highest, every one of them sold into), grading textbook on 5 of 5 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,692.26, 0.05 ATR through the neckline at 2,692.38 on 1.01x average volume (no surge), then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,634.88, worth 29.57R against the stop at 2,695.54; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 30 contracts @ 2,693.50, SL 2,695.54, TP1 2,634.88 \u2014 1.21% of account (6,074) at risk for 29.57R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Head & Shoulders, 34 bars, 2026-01-07 10:00 to 2026-01-08 20:00",
+              "prior trend: up over 14.4 ATR",
+              "key level 2,692.87, measured height 57.51, structural invalidation 2,729.32",
+              "[M] pass prior_trend: 20-bar up leg=14.45 ATR (min 2.00); structure confirms the trend",
+              "[M] pass head_prominence: 42.0% of pattern height (min 10%)",
+              "[M] pass neckline_geometry: LS 4.86 ATR / RS 5.69 ATR above neckline",
+              "[P] pass shoulder_symmetry_height: 14.5% apart (tolerance 20%)",
+              "[P] pass shoulder_symmetry_duration: 17 vs 17 bars (0.0% apart)",
+              "[P] pass neckline_slope: -1.2deg (max 15deg, ATR-normalised)",
+              "[P] pass time_in_formation: 34 bars (min 20)",
+              "[P] pass volume_decline: LS 14538 > Head 13216 > RS 8436"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,692.26 vs level 2,692.38 (0.05 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 1.01x the average \u2014 below the 1.5x surge threshold, which Ch V-A makes a strong preference, not a rule",
+              "retest: price returned to 2,695.30 and was rejected by a strong wick (strength 0.56)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)",
+              "volume 1.01x average, below the 1.5x Ch V-A threshold"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 7/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 H&S: 5/5 preferred filters passed",
+              "1/2  Breakout strength    \u2014 candle close on 1.01x average volume (no surge)",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 29.57:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,693.56 (B), stop 2,695.54 \u2014 1.98 away",
+              "filled at 2,693.50 \u2014 0.06 of slippage against the plan (0.03R)",
+              "size 30 at 1.21% risk = 6,074.29 USD (100.00/point)",
+              "TP1 2,634.88 (29.57R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,626.84 (33.61R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,577.37 (58.54R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [
+          "breakout volume 1.01x is below the Ch V-A 1.5x surge threshold",
+          "no independent S/R backs the entry or the target (Ch XI)",
+          "Appendix A [P] missed \u2014 Is breakout volume > 1.5x the 20-period average? (1.01x average)"
+        ],
+        "invalidation": [
+          "stop at 2,695.54 sits just beyond the retest wick, inside the formation's own invalidation at 2,729.32 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,695.45 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -608,12 +693,91 @@
         "reasons": {
           "pattern_quality": "H&S: 5/5 preferred filters passed",
           "breakout_strength": "close beyond level on 2.14x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "22.20:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "NQ",
+        "ts": "2026-01-09T06:15:00+00:00",
+        "taken": true,
+        "headline": "NQ SHORT \u00b7 Head & Shoulders on 1H \u00b7 APPROVED 8/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Head & Shoulders completed on the 1H over 36 bars (three pushes higher, the middle one highest, every one of them sold into), grading textbook on 5 of 5 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 21,735.40, 3.87 ATR through the neckline at 21,796.89 on 2.14x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 21,420.80, worth 22.20R against the stop at 21,807.78; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 18 contracts @ 21,790.75, SL 21,807.78, TP1 21,420.80 \u2014 1.22% of account (6,078) at risk for 22.20R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Head & Shoulders, 36 bars, 2026-01-07 09:00 to 2026-01-08 21:00",
+              "prior trend: up over 15.1 ATR",
+              "key level 21,797.32, measured height 376.09, structural invalidation 22,025.59",
+              "[M] pass prior_trend: 20-bar up leg=15.08 ATR (min 2.00); structure confirms the trend",
+              "[M] pass head_prominence: 39.9% of pattern height (min 10%)",
+              "[M] pass neckline_geometry: LS 5.45 ATR / RS 5.33 ATR above neckline",
+              "[P] pass shoulder_symmetry_height: 2.2% apart (tolerance 20%)",
+              "[P] pass shoulder_symmetry_duration: 18 vs 18 bars (0.0% apart)",
+              "[P] pass neckline_slope: -0.2deg (max 15deg, ATR-normalised)",
+              "[P] pass time_in_formation: 36 bars (min 20)",
+              "[P] pass volume_decline: LS 15061 > Head 13424 > RS 8951"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 21,735.40 vs level 21,796.89 (3.87 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.14x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 21,806.07 and was rejected by a strong wick (strength 0.60)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 8/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 H&S: 5/5 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.14x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 22.20:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 21,791.10 (B), stop 21,807.78 \u2014 16.68 away",
+              "filled at 21,790.75 \u2014 0.35 of slippage against the plan (0.02R)",
+              "size 18 at 1.22% risk = 6,078.07 USD (20.00/point)",
+              "TP1 21,420.80 (22.20R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 21,341.38 (26.96R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 21,044.70 (44.74R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [
+          "no independent S/R backs the entry or the target (Ch XI)"
+        ],
+        "invalidation": [
+          "stop at 21,807.78 sits just beyond the retest wick, inside the formation's own invalidation at 22,025.59 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 21,816.74 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -673,12 +837,92 @@
         "reasons": {
           "pattern_quality": "H&S: 5/5 preferred filters passed",
           "breakout_strength": "close beyond level on 2.72x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "25.12:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "USDJPY",
+        "ts": "2026-01-09T06:15:00+00:00",
+        "taken": true,
+        "headline": "USDJPY SHORT \u00b7 Head & Shoulders on 1H \u00b7 APPROVED 8/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Head & Shoulders completed on the 1H over 36 bars (three pushes higher, the middle one highest, every one of them sold into), grading textbook on 5 of 5 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 153.317, 3.66 ATR through the neckline at 153.628 on 2.72x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 151.547, worth 25.12R against the stop at 153.678; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 100 lots @ 153.590, SL 153.678, TP1 151.547 \u2014 1.20% of account (6,013) at risk for 25.12R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Head & Shoulders, 36 bars, 2026-01-07 09:00 to 2026-01-08 21:00",
+              "prior trend: up over 15.1 ATR",
+              "key level 153.632, measured height 2.081, structural invalidation 154.885",
+              "[M] pass prior_trend: 20-bar up leg=15.09 ATR (min 2.00); structure confirms the trend",
+              "[M] pass head_prominence: 40.7% of pattern height (min 10%)",
+              "[M] pass neckline_geometry: LS 5.42 ATR / RS 5.37 ATR above neckline",
+              "[P] pass shoulder_symmetry_height: 0.9% apart (tolerance 20%)",
+              "[P] pass shoulder_symmetry_duration: 17 vs 19 bars (10.5% apart)",
+              "[P] pass neckline_slope: -0.2deg (max 15deg, ATR-normalised)",
+              "[P] pass time_in_formation: 36 bars (min 20)",
+              "[P] pass volume_decline: LS 15082 > Head 13895 > RS 8588"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 153.317 vs level 153.628 (3.66 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.72x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 153.669 and was rejected by a strong wick (strength 0.59)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 8/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 H&S: 5/5 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.72x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 25.12:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 153.596 (B), stop 153.678 \u2014 0.082 away",
+              "filled at 153.590 \u2014 0.006 of slippage against the plan (0.08R)",
+              "size 100 at 1.20% risk = 6,013.07 USD (100,000.00/point)",
+              "TP1 151.547 (25.12R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 151.148 (30.01R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 149.465 (50.62R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "size capped at the 100.0 venue maximum (wanted 103.94)"
+            ]
+          }
+        ],
+        "caveats": [
+          "no independent S/R backs the entry or the target (Ch XI)"
+        ],
+        "invalidation": [
+          "stop at 153.678 sits just beyond the retest wick, inside the formation's own invalidation at 154.885 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 153.735 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -738,12 +982,91 @@
         "reasons": {
           "pattern_quality": "H&S: 5/5 preferred filters passed",
           "breakout_strength": "close beyond level on 2.11x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "24.72:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "RTY",
+        "ts": "2026-01-09T06:15:00+00:00",
+        "taken": true,
+        "headline": "RTY SHORT \u00b7 Head & Shoulders on 1H \u00b7 APPROVED 8/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Head & Shoulders completed on the 1H over 36 bars (three pushes higher, the middle one highest, every one of them sold into), grading textbook on 5 of 5 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,327.31, 4.38 ATR through the neckline at 2,335.55 on 2.11x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,290.68, worth 24.72R against the stop at 2,336.10; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 67 contracts @ 2,334.30, SL 2,336.10, TP1 2,290.68 \u2014 1.24% of account (6,184) at risk for 24.72R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Head & Shoulders, 36 bars, 2026-01-07 09:00 to 2026-01-08 21:00",
+              "prior trend: up over 15.0 ATR",
+              "key level 2,335.56, measured height 44.87, structural invalidation 2,362.17",
+              "[M] pass prior_trend: 20-bar up leg=14.96 ATR (min 2.00); structure confirms the trend",
+              "[M] pass head_prominence: 40.9% of pattern height (min 10%)",
+              "[M] pass neckline_geometry: LS 5.40 ATR / RS 5.22 ATR above neckline",
+              "[P] pass shoulder_symmetry_height: 3.3% apart (tolerance 20%)",
+              "[P] pass shoulder_symmetry_duration: 17 vs 19 bars (10.5% apart)",
+              "[P] pass neckline_slope: -0.1deg (max 15deg, ATR-normalised)",
+              "[P] pass time_in_formation: 36 bars (min 20)",
+              "[P] pass volume_decline: LS 14705 > Head 13623 > RS 8646"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,327.31 vs level 2,335.55 (4.38 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.11x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 2,335.90 and was rejected by a strong wick (strength 0.63)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 8/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 H&S: 5/5 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.11x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 24.72:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,334.33 (B), stop 2,336.10 \u2014 1.77 away",
+              "filled at 2,334.30 \u2014 0.03 of slippage against the plan (0.02R)",
+              "size 67 at 1.24% risk = 6,184.05 USD (50.00/point)",
+              "TP1 2,290.68 (24.72R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,281.39 (29.98R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,245.81 (50.13R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [
+          "no independent S/R backs the entry or the target (Ch XI)"
+        ],
+        "invalidation": [
+          "stop at 2,336.10 sits just beyond the retest wick, inside the formation's own invalidation at 2,362.17 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,337.90 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -795,12 +1118,88 @@
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.94x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
+          "retest_confirm": "clean retest with pin bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 2278.78620 (1 touches) aligns with entry/target",
           "rr_ratio": "22.00:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "RTY",
+        "ts": "2026-01-14T11:45:00+00:00",
+        "taken": true,
+        "headline": "RTY LONG \u00b7 Double Bottom on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Bottom completed on the 1H over 19 bars (the same floor defended twice, the second attempt holding where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,234.39, 0.28 ATR through the confirmation line at 2,233.86 on 2.94x the 20-bar average volume, then price returned to the level and was rejected by a pin bar. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,279.70, worth 22.00R against the stop at 2,231.44; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 200 contracts @ 2,233.60, SL 2,231.44, TP1 2,279.70 \u2014 1.99% of account (21,784) at risk for 22.00R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a long trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Bottom, 19 bars, 2026-01-13 04:00 to 2026-01-13 23:00",
+              "prior trend: down over 19.3 ATR",
+              "key level 2,233.86, measured height 45.84, structural invalidation 2,187.89",
+              "[M] pass prior_trend: 20-bar down leg=19.32 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.01% apart (0.5% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.84 ATR vs required 1.93 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15513 > 12233",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,234.39 vs level 2,233.86 (0.28 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.94x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 2,231.64 and was rejected by a pin bar (strength 0.78)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DB: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.94x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with pin bar rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 2278.78620 (1 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 22.00:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,233.54 (B), stop 2,231.44 \u2014 2.10 away",
+              "filled at 2,233.60 \u2014 0.06 of slippage against the plan (0.03R)",
+              "size 200 at 1.99% risk = 21,783.58 USD (50.00/point)",
+              "TP1 2,279.70 (22.00R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,281.39 (22.80R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,325.54 (43.85R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [],
+        "invalidation": [
+          "stop at 2,231.44 sits just beyond the retest wick, inside the formation's own invalidation at 2,187.89 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,231.52 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -852,12 +1251,91 @@
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.66x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
+          "retest_confirm": "clean retest with pin bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "23.50:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "EURUSD",
+        "ts": "2026-01-14T11:45:00+00:00",
+        "taken": true,
+        "headline": "EURUSD LONG \u00b7 Double Bottom on 1H \u00b7 APPROVED 8/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Bottom completed on the 1H over 19 bars (the same floor defended twice, the second attempt holding where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 1.06455, 0.07 ATR through the confirmation line at 1.06451 on 2.66x the 20-bar average volume, then price returned to the level and was rejected by a pin bar. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 1.07855, worth 23.50R against the stop at 1.06396; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 100 lots @ 1.06460, SL 1.06396, TP1 1.07855 \u2014 0.61% of account (6,656) at risk for 23.50R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a long trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Bottom, 19 bars, 2026-01-13 04:00 to 2026-01-13 23:00",
+              "prior trend: down over 19.2 ATR",
+              "key level 1.06451, measured height 0.01404, structural invalidation 1.05021",
+              "[M] pass prior_trend: 20-bar down leg=19.20 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.05% apart (3.7% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.67 ATR vs required 1.92 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15179 > 12303",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 1.06455 vs level 1.06451 (0.07 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.66x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 1.06402 and was rejected by a pin bar (strength 0.65)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 8/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DB: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.66x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with pin bar rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 23.50:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 1.06455 (B), stop 1.06396 \u2014 0.00060 away",
+              "filled at 1.06460 \u2014 0.00005 of slippage against the plan (0.08R)",
+              "size 100 at 0.61% risk = 6,656.41 USD (100,000.00/point)",
+              "TP1 1.07855 (23.50R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 1.07895 (24.17R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 1.09259 (47.07R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "size capped at the 100.0 venue maximum (wanted 205.26)"
+            ]
+          }
+        ],
+        "caveats": [
+          "no independent S/R backs the entry or the target (Ch XI)"
+        ],
+        "invalidation": [
+          "stop at 1.06396 sits just beyond the retest wick, inside the formation's own invalidation at 1.05021 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 1.06380 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -909,12 +1387,91 @@
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.79x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "no independent S/R at entry or target",
           "rr_ratio": "22.56:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "GBPUSD",
+        "ts": "2026-01-14T11:45:00+00:00",
+        "taken": true,
+        "headline": "GBPUSD LONG \u00b7 Double Bottom on 1H \u00b7 APPROVED 8/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Bottom completed on the 1H over 19 bars (the same floor defended twice, the second attempt holding where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 1.24587, 0.20 ATR through the confirmation line at 1.24574 on 2.79x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 1.26179, worth 22.56R against the stop at 1.24538; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 100 lots @ 1.24615, SL 1.24538, TP1 1.26179 \u2014 0.70% of account (7,668) at risk for 22.56R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a long trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Bottom, 19 bars, 2026-01-13 04:00 to 2026-01-13 23:00",
+              "prior trend: down over 19.6 ATR",
+              "key level 1.24574, measured height 0.01605, structural invalidation 1.22942",
+              "[M] pass prior_trend: 20-bar down leg=19.59 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.04% apart (3.3% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.66 ATR vs required 1.96 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15236 > 12499",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 1.24587 vs level 1.24574 (0.20 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.79x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 1.24545 and was rejected by a strong wick (strength 0.52)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 8/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DB: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.79x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "0/1  S/R confluence       \u2014 no independent S/R at entry or target",
+              "1/1  Reward:risk          \u2014 22.56:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 1.24608 (B), stop 1.24538 \u2014 0.00070 away",
+              "filled at 1.24615 \u2014 0.00007 of slippage against the plan (0.11R)",
+              "size 100 at 0.70% risk = 7,668.43 USD (100,000.00/point)",
+              "TP1 1.26179 (22.56R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 1.26295 (24.21R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 1.27785 (45.59R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "size capped at the 100.0 venue maximum (wanted 178.17)"
+            ]
+          }
+        ],
+        "caveats": [
+          "no independent S/R backs the entry or the target (Ch XI)"
+        ],
+        "invalidation": [
+          "stop at 1.24538 sits just beyond the retest wick, inside the formation's own invalidation at 1.22942 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 1.24490 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -966,12 +1523,89 @@
         "reasons": {
           "pattern_quality": "DB: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.59x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 2625.34437 (2 touches) aligns with entry/target",
           "rr_ratio": "21.68:1 to the measured move",
           "clean_path": "no significant S/R between entry and TP1"
         }
+      },
+      "research": {
+        "symbol": "GC",
+        "ts": "2026-01-14T11:45:00+00:00",
+        "taken": true,
+        "headline": "GC LONG \u00b7 Double Bottom on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Bottom completed on the 1H over 19 bars (the same floor defended twice, the second attempt holding where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,566.78, 0.11 ATR through the confirmation line at 2,566.52 on 2.59x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,625.83, worth 21.68R against the stop at 2,562.91; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 65 contracts @ 2,565.80, SL 2,562.91, TP1 2,625.83 \u2014 1.67% of account (18,288) at risk for 21.68R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a long trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Bottom, 19 bars, 2026-01-13 04:00 to 2026-01-13 23:00",
+              "prior trend: down over 18.9 ATR",
+              "key level 2,566.52, measured height 59.31, structural invalidation 2,507.19",
+              "[M] pass prior_trend: 20-bar down leg=18.89 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.00% apart (0.1% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.81 ATR vs required 1.89 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15224 > 12563",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,566.78 vs level 2,566.52 (0.11 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.59x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 2,563.17 and was rejected by a strong wick (strength 0.63)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DB: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.59x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 2625.34437 (2 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 21.68:1 to the measured move",
+              "1/1  Clean path           \u2014 no significant S/R between entry and TP1"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,565.69 (B), stop 2,562.91 \u2014 2.77 away",
+              "filled at 2,565.80 \u2014 0.11 of slippage against the plan (0.04R)",
+              "size 65 at 1.67% risk = 18,288.01 USD (100.00/point)",
+              "TP1 2,625.83 (21.68R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,634.58 (24.84R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,685.14 (43.07R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "risk trimmed from 2.00% to 1.70% to stay under the 5% aggregate cap"
+            ]
+          }
+        ],
+        "caveats": [],
+        "invalidation": [
+          "stop at 2,562.91 sits just beyond the retest wick, inside the formation's own invalidation at 2,507.19 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,563.50 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -1029,6 +1663,89 @@
           "rr_ratio": "23.63:1 to the measured move",
           "clean_path": "1 opposing level(s) between entry and TP1 (nearest 1.06834)"
         }
+      },
+      "research": {
+        "symbol": "EURUSD",
+        "ts": "2026-01-15T17:15:00+00:00",
+        "taken": true,
+        "headline": "EURUSD LONG \u00b7 Double Bottom on 1H \u00b7 APPROVED 7/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Bottom completed on the 1H over 19 bars (the same floor defended twice, the second attempt holding where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 1.06469, 0.48 ATR through the confirmation line at 1.06451 on 1.10x average volume (no surge), then price returned to the level and was rejected by a engulfing. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 1.07855, worth 23.63R against the stop at 1.06418; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 100 lots @ 1.06481, SL 1.06418, TP1 1.07855 \u2014 0.33% of account (6,534) at risk for 23.63R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a long trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Bottom, 19 bars, 2026-01-13 04:00 to 2026-01-13 23:00",
+              "prior trend: down over 13.3 ATR",
+              "key level 1.06451, measured height 0.01404, structural invalidation 1.05021",
+              "[M] pass prior_trend: 20-bar down leg=13.33 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.05% apart (3.7% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 6.02 ATR vs required 1.33 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15179 > 12303",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 1.06469 vs level 1.06451 (0.48 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 1.10x the average \u2014 below the 1.5x surge threshold, which Ch V-A makes a strong preference, not a rule",
+              "retest: price returned to 1.06446 and was rejected by a engulfing (strength 0.82)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)",
+              "volume 1.10x average, below the 1.5x Ch V-A threshold"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 7/10 -> APPROVED (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DB: 3/3 preferred filters passed",
+              "1/2  Breakout strength    \u2014 candle close on 1.10x average volume (no surge)",
+              "1/1  Retest confirmation  \u2014 clean retest with engulfing rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 1.07855 (1 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 23.63:1 to the measured move",
+              "0/1  Clean path           \u2014 1 opposing level(s) between entry and TP1 (nearest 1.06834)"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 1.06477 (B), stop 1.06418 \u2014 0.00058 away",
+              "filled at 1.06481 \u2014 0.00004 of slippage against the plan (0.07R)",
+              "size 100 at 0.33% risk = 6,533.82 USD (100,000.00/point)",
+              "TP1 1.07855 (23.63R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 1.07879 (24.04R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 1.09259 (47.69R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C); widened to the 2.64 ATR / 4x spread minimum",
+              "size capped at the 100.0 venue maximum (wanted 374.29)"
+            ]
+          }
+        ],
+        "caveats": [
+          "breakout volume 1.10x is below the Ch V-A 1.5x surge threshold",
+          "1 opposing level(s) between entry and TP1 (nearest 1.06834)",
+          "Appendix A [P] missed \u2014 Is breakout volume > 1.5x the 20-period average? (1.10x average)",
+          "Appendix A [P] missed \u2014 Is path to TP1 clear of major S/R obstacles? (1 opposing level(s) between entry and TP1 (nearest 1.06834))"
+        ],
+        "invalidation": [
+          "stop at 1.06418 sits just beyond the retest wick, inside the formation's own invalidation at 1.05021 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 1.06406 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -1080,13 +1797,95 @@
         "reasons": {
           "pattern_quality": "DT: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.37x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
+          "retest_confirm": "clean retest with pin bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 1.27699 (3 touches) aligns with entry/target",
           "rr_ratio": "25.47:1 to the measured move",
           "clean_path": "1 opposing level(s) between entry and TP1 (nearest 1.27211)",
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
+      },
+      "research": {
+        "symbol": "GBPUSD",
+        "ts": "2026-01-19T06:15:00+00:00",
+        "taken": true,
+        "headline": "GBPUSD SHORT \u00b7 Double Top on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Top completed on the 1H over 19 bars (the same ceiling rejected twice, the second attempt failing where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 1.27579, 0.98 ATR through the confirmation line at 1.27648 on 2.37x the 20-bar average volume, then price returned to the level and was rejected by a pin bar. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 1.25991, worth 25.47R against the stop at 1.27733; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 100 lots @ 1.27660, SL 1.27733, TP1 1.25991 \u2014 0.35% of account (7,281) at risk for 25.47R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Top, 19 bars, 2026-01-17 06:00 to 2026-01-18 01:00",
+              "prior trend: up over 19.0 ATR",
+              "key level 1.27648, measured height 0.01657, structural invalidation 1.29332",
+              "[M] pass prior_trend: 20-bar up leg=18.99 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.04% apart (3.4% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.74 ATR vs required 1.90 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 19 bars (min 15)",
+              "[P] pass volume_decline: 15308 > 12497",
+              "[P] pass test_spacing_symmetry: test gaps [19] (balance 100%)",
+              "A+ overlap with a H&S on the same bars (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 1.27579 vs level 1.27648 (0.98 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.37x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 1.27726 and was rejected by a pin bar (strength 0.63)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DT: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.37x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with pin bar rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 1.27699 (3 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 25.47:1 to the measured move",
+              "0/1  Clean path           \u2014 1 opposing level(s) between entry and TP1 (nearest 1.27211)",
+              "+1    bonus                \u2014 A+ dual-pattern overlap with H&S (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 1.27667 (B), stop 1.27733 \u2014 0.00066 away",
+              "filled at 1.27660 \u2014 0.00007 of slippage against the plan (0.11R)",
+              "size 100 at 0.35% risk = 7,280.88 USD (100,000.00/point)",
+              "TP1 1.25991 (25.47R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 1.25787 (28.58R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 1.24335 (50.64R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "size capped at the 100.0 venue maximum (wanted 567.50)"
+            ]
+          }
+        ],
+        "caveats": [
+          "1 opposing level(s) between entry and TP1 (nearest 1.27211)",
+          "Appendix A [P] missed \u2014 Is path to TP1 clear of major S/R obstacles? (1 opposing level(s) between entry and TP1 (nearest 1.27211))"
+        ],
+        "invalidation": [
+          "stop at 1.27733 sits just beyond the retest wick, inside the formation's own invalidation at 1.29332 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 1.27735 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -1138,13 +1937,94 @@
         "reasons": {
           "pattern_quality": "DT: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 3.27x average volume",
-          "retest_confirm": "clean retest with pin_bar rejection",
+          "retest_confirm": "clean retest with pin bar rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 2615.25115 (1 touches) aligns with entry/target",
           "rr_ratio": "23.38:1 to the measured move",
           "clean_path": "1 opposing level(s) between entry and TP1 (nearest 2657.91886)",
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
+      },
+      "research": {
+        "symbol": "GC",
+        "ts": "2026-01-19T06:15:00+00:00",
+        "taken": true,
+        "headline": "GC SHORT \u00b7 Double Top on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Top completed on the 1H over 18 bars (the same ceiling rejected twice, the second attempt failing where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,673.72, 0.09 ATR through the confirmation line at 2,673.94 on 3.27x the 20-bar average volume, then price returned to the level and was rejected by a pin bar. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,615.29, worth 23.38R against the stop at 2,675.90; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 163 contracts @ 2,673.30, SL 2,675.90, TP1 2,615.29 \u2014 1.99% of account (41,169) at risk for 23.38R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Top, 18 bars, 2026-01-17 06:00 to 2026-01-18 00:00",
+              "prior trend: up over 19.3 ATR",
+              "key level 2,673.94, measured height 58.65, structural invalidation 2,733.36",
+              "[M] pass prior_trend: 20-bar up leg=19.33 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.06% apart (2.6% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.87 ATR vs required 1.93 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 18 bars (min 15)",
+              "[P] pass volume_decline: 15054 > 12506",
+              "[P] pass test_spacing_symmetry: test gaps [18] (balance 100%)",
+              "A+ overlap with a H&S on the same bars (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,673.72 vs level 2,673.94 (0.09 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 3.27x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 2,675.65 and was rejected by a pin bar (strength 0.70)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DT: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 3.27x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with pin bar rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 2615.25115 (1 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 23.38:1 to the measured move",
+              "0/1  Clean path           \u2014 1 opposing level(s) between entry and TP1 (nearest 2657.91886)",
+              "+1    bonus                \u2014 A+ dual-pattern overlap with H&S (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,673.42 (B), stop 2,675.90 \u2014 2.49 away",
+              "filled at 2,673.30 \u2014 0.12 of slippage against the plan (0.05R)",
+              "size 163 at 1.99% risk = 41,168.65 USD (100.00/point)",
+              "TP1 2,615.29 (23.38R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,606.01 (27.12R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,556.64 (46.98R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [
+          "1 opposing level(s) between entry and TP1 (nearest 2657.91886)",
+          "Appendix A [P] missed \u2014 Is path to TP1 clear of major S/R obstacles? (1 opposing level(s) between entry and TP1 (nearest 2657.91886))"
+        ],
+        "invalidation": [
+          "stop at 2,675.90 sits just beyond the retest wick, inside the formation's own invalidation at 2,733.36 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,676.95 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -1196,13 +2076,94 @@
         "reasons": {
           "pattern_quality": "DT: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.84x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 21663.87034 (3 touches) aligns with entry/target",
           "rr_ratio": "24.17:1 to the measured move",
           "clean_path": "1 opposing level(s) between entry and TP1 (nearest 21552.27413)",
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
+      },
+      "research": {
+        "symbol": "NQ",
+        "ts": "2026-01-19T06:15:00+00:00",
+        "taken": true,
+        "headline": "NQ SHORT \u00b7 Double Top on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Top completed on the 1H over 20 bars (the same ceiling rejected twice, the second attempt failing where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 21,634.81, 0.94 ATR through the confirmation line at 21,649.75 on 2.84x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 21,261.55, worth 24.17R against the stop at 21,672.31; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 125 contracts @ 21,655.75, SL 21,672.31, TP1 21,261.55 \u2014 2.00% of account (41,306) at risk for 24.17R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Top, 20 bars, 2026-01-17 05:00 to 2026-01-18 01:00",
+              "prior trend: up over 19.4 ATR",
+              "key level 21,649.75, measured height 388.20, structural invalidation 22,043.91",
+              "[M] pass prior_trend: 20-bar up leg=19.35 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.05% apart (3.1% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.77 ATR vs required 1.94 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 20 bars (min 15)",
+              "[P] pass volume_decline: 15264 > 12051",
+              "[P] pass test_spacing_symmetry: test gaps [20] (balance 100%)",
+              "A+ overlap with a H&S on the same bars (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 21,634.81 vs level 21,649.75 (0.94 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.84x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 21,670.61 and was rejected by a strong wick (strength 0.51)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DT: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.84x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 21663.87034 (3 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 24.17:1 to the measured move",
+              "0/1  Clean path           \u2014 1 opposing level(s) between entry and TP1 (nearest 21552.27413)",
+              "+1    bonus                \u2014 A+ dual-pattern overlap with H&S (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 21,655.99 (B), stop 21,672.31 \u2014 16.32 away",
+              "filled at 21,655.75 \u2014 0.24 of slippage against the plan (0.01R)",
+              "size 125 at 2.00% risk = 41,306.13 USD (20.00/point)",
+              "TP1 21,261.55 (24.17R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 21,208.66 (27.41R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 20,873.36 (47.95R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)"
+            ]
+          }
+        ],
+        "caveats": [
+          "1 opposing level(s) between entry and TP1 (nearest 21552.27413)",
+          "Appendix A [P] missed \u2014 Is path to TP1 clear of major S/R obstacles? (1 opposing level(s) between entry and TP1 (nearest 21552.27413))"
+        ],
+        "invalidation": [
+          "stop at 21,672.31 sits just beyond the retest wick, inside the formation's own invalidation at 22,043.91 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 21,669.73 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     },
     {
@@ -1270,13 +2231,95 @@
         "reasons": {
           "pattern_quality": "DT: 3/3 preferred filters passed",
           "breakout_strength": "close beyond level on 2.41x average volume",
-          "retest_confirm": "clean retest with strong_wick rejection",
+          "retest_confirm": "clean retest with strong wick rejection",
           "htf_alignment": "higher timeframe neutral or screens diverging",
           "sr_confluence": "independent S/R at 2318.00876 (1 touches) aligns with entry/target",
           "rr_ratio": "32.27:1 to the measured move",
           "clean_path": "1 opposing level(s) between entry and TP1 (nearest 2305.66943)",
           "dual_pattern_bonus": "A+ dual-pattern overlap with H&S (Ch VI-B)"
         }
+      },
+      "research": {
+        "symbol": "RTY",
+        "ts": "2026-01-19T06:15:00+00:00",
+        "taken": true,
+        "headline": "RTY SHORT \u00b7 Double Top on 1H \u00b7 ELITE 9/10",
+        "thesis": "Screen 1 has no directional bias, so this is traded on the formation alone rather than as a trend continuation (Ch IX). A Double Top completed on the 1H over 20 bars (the same ceiling rejected twice, the second attempt failing where the first did), grading textbook on 3 of 3 preferred filters (Ch XI pattern quality 2/2). The 15M closed at 2,318.66, 0.24 ATR through the confirmation line at 2,319.10 on 2.41x the 20-bar average volume, then price returned to the level and was rejected by a strong wick. The fill was taken on that rejection, which is the Method B fill the firm defaults to. The measured move projects 2,273.25, worth 32.27R against the stop at 2,319.82; the firm's floor is 2:1 (Ch VIII-A).",
+        "plan": "PLAN: 183 contracts @ 2,318.30, SL 2,319.82, TP1 2,273.25 \u2014 0.66% of account (13,540) at risk for 32.27R",
+        "sections": [
+          {
+            "heading": "SCREEN 1 \u2014 TREND (1D) \u00b7 Ch IX macro bias",
+            "lines": [
+              "bias RANGE (strength 0.00) vs a short trade",
+              "no trend timeframe had the 20 bars needed for a bias, so Screen 1 reads neutral rather than aligned"
+            ]
+          },
+          {
+            "heading": "SCREEN 2 \u2014 PATTERN (1H) \u00b7 Ch III / Ch IV formation",
+            "lines": [
+              "Double Top, 20 bars, 2026-01-17 05:00 to 2026-01-18 01:00",
+              "prior trend: up over 19.7 ATR",
+              "key level 2,319.10, measured height 45.86, structural invalidation 2,365.96",
+              "[M] pass prior_trend: 20-bar up leg=19.75 ATR (min 2.00); structure confirms the trend",
+              "[M] pass level_proximity: tests 0.08% apart (4.4% of height); limits 3% / 15%",
+              "[M] pass pullback_spacing: pullback 8.77 ATR vs required 1.97 ATR",
+              "[M] pass range_context: tests sit 0.0% inside the 101-bar range (max 15%)",
+              "[P] pass time_in_formation: 20 bars (min 15)",
+              "[P] pass volume_decline: 15663 > 12434",
+              "[P] pass test_spacing_symmetry: test gaps [20] (balance 100%)",
+              "A+ overlap with a H&S on the same bars (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "SCREEN 3 \u2014 ENTRY (15M) \u00b7 Ch V break, Ch VII trigger",
+            "lines": [
+              "break: 15M close 2,318.66 vs level 2,319.10 (0.24 ATR beyond) \u2014 Ch V-A criterion 1 met on a CLOSING basis",
+              "volume: 2.41x the average \u2014 surge confirmed (Ch V-A criterion 2)",
+              "retest: price returned to 2,319.62 and was rejected by a strong wick (strength 0.51)",
+              "the broken level held as support/resistance \u2014 Ch V-C structural flip",
+              "Method B \u2014 filled on the retest rejection, the firm default (Ch VII)"
+            ]
+          },
+          {
+            "heading": "CONFLUENCE \u2014 Ch XI \u00b7 9/10 -> ELITE (gate is 7/10)",
+            "lines": [
+              "2/2  Pattern quality      \u2014 DT: 3/3 preferred filters passed",
+              "2/2  Breakout strength    \u2014 close beyond level on 2.41x average volume",
+              "1/1  Retest confirmation  \u2014 clean retest with strong wick rejection",
+              "1/2  HTF alignment        \u2014 higher timeframe neutral or screens diverging",
+              "1/1  S/R confluence       \u2014 independent S/R at 2318.00876 (1 touches) aligns with entry/target",
+              "1/1  Reward:risk          \u2014 32.27:1 to the measured move",
+              "0/1  Clean path           \u2014 1 opposing level(s) between entry and TP1 (nearest 2305.66943)",
+              "+1    bonus                \u2014 A+ dual-pattern overlap with H&S (Ch VI-B)"
+            ]
+          },
+          {
+            "heading": "THE PLAN \u2014 Ch VIII sizing, Ch X exits",
+            "lines": [
+              "entry 2,318.42 (B), stop 2,319.82 \u2014 1.40 away",
+              "filled at 2,318.30 \u2014 0.12 of slippage against the plan (0.08R)",
+              "size 183 at 0.66% risk = 13,539.57 USD (50.00/point)",
+              "TP1 2,273.25 (32.27R, 50%) \u2014 the measured move (Ch III-D / Ch IV-D)",
+              "TP2 2,272.52 (32.79R, 30%) \u2014 next significant S/R (Ch X-B)",
+              "TP3 2,227.39 (65.03R, 20%) \u2014 the trailed runner (Ch X-B)",
+              "stop to breakeven at 1.0R, trailing on the swing from 1.5R (Ch X-A)",
+              "stop just beyond the retest wick (Ch VII Method B/C)",
+              "risk trimmed from 2.00% to 0.66% to stay under the 5% aggregate cap"
+            ]
+          }
+        ],
+        "caveats": [
+          "1 opposing level(s) between entry and TP1 (nearest 2305.66943)",
+          "Appendix A [P] missed \u2014 Is path to TP1 clear of major S/R obstacles? (1 opposing level(s) between entry and TP1 (nearest 2305.66943))"
+        ],
+        "invalidation": [
+          "stop at 2,319.82 sits just beyond the retest wick, inside the formation's own invalidation at 2,365.96 \u2014 a failed retest is the invalidation of the structural flip this trade is built on (Ch VII Method B)",
+          "a close back through 2,321.45 reclaims the broken level and exits the trade (Ch X-C structural invalidation)",
+          "a confirmed counter-pattern on a lower timeframe exits the trade (Ch X-C)",
+          "high-impact news before the stop reaches breakeven exits the trade (Ch X-C)",
+          "no progress after 288 entry-screen bars closes it as dead money (Ch X-C)"
+        ],
+        "blocked_by": ""
       }
     }
   ],

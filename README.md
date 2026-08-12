@@ -48,7 +48,7 @@ python main.py backtest --data ./data --symbols GC,EURUSD \
 epoch timestamps are accepted). Every higher timeframe is derived from that one
 series, so the three screens can never disagree because of vendor differences.
 
-Run the tests with `python -m pytest tests/ -q` (153 tests, ~43s).
+Run the tests with `python -m pytest tests/ -q` (171 tests, ~40s).
 
 ---
 
@@ -68,6 +68,37 @@ The engine implements Ch VI-A end to end:
 ```
 
 `bot.py` wires steps 5-7 to an account; `strategy/tfbs.py` owns 1-4.
+
+### Research notes — why it took the trade
+
+Every executed trade carries a written explanation, printed at the fill and
+filed to `journal/tfbs_research.md`:
+
+```
+  [2026-01-09 06:15] GC entry: APPROVED H&S short 30 @ 2693.50 SL 2695.54 ...
+     RESEARCH — GC SHORT · Head & Shoulders on 1H · APPROVED 7/10
+       Screen 1 has no directional bias, so this is traded on the formation
+       alone rather than as a trend continuation (Ch IX). A Head & Shoulders
+       completed on the 1H over 34 bars (three pushes higher, the middle one
+       highest, every one of them sold into), grading textbook on 5 of 5
+       preferred filters (Ch XI pattern quality 2/2). The 15M closed at
+       2,692.26, 0.05 ATR through the neckline at 2,692.38 ...
+       PLAN: 30 contracts @ 2,693.50, SL 2,695.54, TP1 2,634.88 — 1.21% ...
+       ! breakout volume 1.01x is below the Ch V-A 1.5x surge threshold
+```
+
+`--research full` expands that to the whole note: each of the three screens,
+the Ch XI scorecard factor by factor with the scorer's own justification, the
+Ch X exit ladder, and what would invalidate the trade. `--research off`
+silences it.
+
+The note is **derived, not narrated**: `strategy/research.py` builds every
+sentence from the same `TradeSignal`, `MTFAlignment` and `ConfluenceScore`
+objects the engine decided on, so there is no second code path that could
+describe a trade differently from how it was taken. It also records what was
+*weak* about each setup — missed preferred filters, thin breakout volume, an
+obstructed path — at entry, before the outcome is known. `tests/test_research.py`
+holds it to both properties.
 
 ### Multi-timeframe protocol (Ch IX)
 
@@ -213,17 +244,18 @@ titan_tfbs/
   instruments.py       Ch I universe + contract specs
   core/                candles, timeframes, indicators, market structure
   patterns/            Ch III (H&S) and Ch IV (DT/DB/Triple)
-  strategy/            Ch V breakout, Ch IX MTF, Ch XI scoring, Appendix A
+  strategy/            Ch V breakout, Ch IX MTF, Ch XI scoring, Appendix A,
+                       Ch XIII-A research notes
   risk/                Ch VIII limits, RMG s.05 ladder, Ch XII compliance
   execution/           orders, broker interface, Ch X trade management
   data/                CSV / in-memory feeds, economic calendar, synthetic data
-  journal/             Ch XIII record set
+  journal/             Ch XIII record set, including the research log
   backtest/            event-driven backtester, Ch XIII-B metrics
   bot.py               live orchestration
   cli.py               command-line interface
 main.py                the entry point — every command routes through here
 config/titan.yaml      the firm configuration
-tests/                 153 tests, one per enforced rule
+tests/                 171 tests, one per enforced rule
 ```
 
 The backtester replays candles through the *live* `TFBSBot` — same pipeline,

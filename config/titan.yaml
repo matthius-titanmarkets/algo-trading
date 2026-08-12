@@ -234,4 +234,7 @@ journal:
   trade_log: tfbs_trades.csv
   signal_log: tfbs_signals.csv
   equity_log: tfbs_equity.csv
+  research_log: tfbs_research.md    # Ch XIII-A — the reasoning, not just levels
   log_skipped_setups: true          # Ch XII-A4 "wins, losses, BE, skipped"
+  log_research: true                # write a research note per executed trade
+  log_research_for_skipped: false   # ...and for refused setups too (verbose)

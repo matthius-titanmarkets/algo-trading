@@ -148,6 +148,10 @@ def make_styles():
     s.add(ParagraphStyle("WarnBody", parent=s["Normal"], fontSize=9, leading=13,
                          textColor=colors.HexColor("#7A1B1B")))
     s.add(ParagraphStyle("Cell", parent=s["Normal"], fontSize=7.5, leading=9.5))
+    s.add(ParagraphStyle("CardHead", parent=s["Normal"], fontSize=8.5, leading=11,
+                         textColor=colors.white))
+    s.add(ParagraphStyle("CardHeadRight", parent=s["CardHead"], alignment=2,
+                         textColor=GOLD))
     return s
 
 
@@ -233,6 +237,45 @@ def equity_chart(curve: List, width=PAGE_W - 2 * MARGIN, height=58 * mm):
 # ---------------------------------------------------------------------------
 # Report body
 # ---------------------------------------------------------------------------
+
+
+def _research_card(trade: Dict, st) -> KeepTogether:
+    """One trade's Ch XIII-A write-up: why it was taken, and how it ended.
+
+    The outcome is printed beside the thesis on purpose. A research note read
+    without its result teaches nothing, and a result read without the note is
+    the reason Ch XIII exists.
+    """
+    note = trade["research"]
+    r = trade.get("realized_r", 0.0)
+    outcome = (
+        f"{r:+.2f}R · {money(trade.get('realized_pnl', 0.0))} · "
+        f"{(trade.get('close_reason') or 'open').replace('_', ' ')}"
+    )
+    header = Table(
+        [[Paragraph(f"<b>{note['headline']}</b>", st["CardHead"]),
+          Paragraph(outcome, st["CardHeadRight"])]],
+        colWidths=[(PAGE_W - 2 * MARGIN) * 0.62, (PAGE_W - 2 * MARGIN) * 0.38],
+    )
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+
+    parts = [header, Spacer(1, 1.5 * mm), Paragraph(note["thesis"], st["Body"])]
+    if note.get("plan"):
+        parts.append(Spacer(1, 1 * mm))
+        parts.append(Paragraph(
+            f"<font face='Courier' size='7'>{note['plan']}</font>", st["Body"]))
+    if note.get("caveats"):
+        parts.append(Spacer(1, 1 * mm))
+        parts.append(Paragraph(
+            "<b>Flagged at entry:</b> " + "; ".join(note["caveats"]), st["Small"]))
+    return KeepTogether(parts)
 
 
 def build(results: Dict, out_path: str) -> None:
@@ -500,8 +543,29 @@ def build(results: Dict, out_path: str) -> None:
                        align_right=(1,)))
     story.append(PageBreak())
 
+    # ---- Research notes --------------------------------------------------
+    noted = [t for t in results.get("trades", []) if t.get("research")]
+    if noted:
+        story.append(Paragraph("5 · Why each trade was taken", st["H1"]))
+        story.append(Paragraph(
+            "Ch XIII-A requires the reasoning behind a trade to be recorded "
+            "alongside its levels. The engine writes that note from the same "
+            "objects it decided on — the formation, the break, the Ch IX screen "
+            "reads and the Ch XI scorecard — so a note cannot describe a trade "
+            "differently from how it was taken. Each entry below also carries "
+            "what was <i>weak</i> about the setup at the moment of entry, "
+            "recorded before the outcome was known.", st["Body"]))
+        story.append(Spacer(1, 4 * mm))
+        for trade in noted:
+            story.append(_research_card(trade, st))
+            story.append(Spacer(1, 3.5 * mm))
+        story.append(PageBreak())
+        findings_number = 6
+    else:
+        findings_number = 5
+
     # ---- Findings -------------------------------------------------------
-    story.append(Paragraph("5 · Findings and limitations", st["H1"]))
+    story.append(Paragraph(f"{findings_number} · Findings and limitations", st["H1"]))
     findings: List[str] = []
 
     if timeline and any(not e["can_trade"] for e in timeline):

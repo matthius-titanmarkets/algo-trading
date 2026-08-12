@@ -5,6 +5,7 @@
     python main.py --data ./data            run it on your own 5M CSVs
     python main.py --symbols GC,NQ          pick the universe
     python main.py --profile titan_entry    trade the Ch XII-B rule set
+    python main.py --research full          why it took each trade (Ch XIII-A)
 
     python main.py backtest --data ./data   replay history, full risk gate
     python main.py scan     --data ./data   formations and scored setups only
@@ -65,6 +66,7 @@ EXAMPLES
   python main.py
   python main.py --symbols GC,EURUSD,NQ
   python main.py --data ./data --journal-dir ./journal
+  python main.py --research full        why it took each trade, in full
   python main.py backtest --data ./data --config config/titan.yaml
   python main.py scan --data ./data --symbols GC
 

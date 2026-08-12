@@ -140,6 +140,9 @@ def build(results: Dict, out_path: str) -> None:
     legend = [
         ("Trades", "One row per closed trade — the Ch XIII-A journal field set. "
                    "This is the source of truth; every other sheet computes from it."),
+        ("Research", "Ch XIII-A: why each trade was taken, written by the engine "
+                     "from the objects it decided on — including what was weak "
+                     "about the setup, recorded before the outcome was known."),
         ("Summary", "Headline metrics, all as live formulas over Trades. Filter or "
                     "delete rows in Trades and these update."),
         ("By Instrument", "Per-symbol performance via SUMIFS/COUNTIFS over Trades."),
@@ -237,6 +240,36 @@ def build(results: Dict, out_path: str) -> None:
     B = f"Trades!$B$2:$B${last}"      # symbol
     E = f"Trades!$E$2:$E${last}"      # formation
     H = f"Trades!$H$2:$H${last}"      # grade
+
+    # ---------------- Research ----------------------------------------
+    # Ch XIII-A wants the reasoning next to the levels. It is a separate sheet
+    # rather than extra columns on Trades because prose in a numeric grid makes
+    # both harder to read, and Trades has to stay filterable.
+    noted = [t for t in trades if t.get("research")]
+    if noted:
+        ws = wb.create_sheet("Research")
+        cols = ["Trade ID", "Symbol", "Setup", "Why it was taken", "Plan",
+                "Flagged at entry", "Realised R", "Exit reason"]
+        header_row(ws, 1, cols, [10, 9, 44, 96, 60, 66, 10, 24])
+        ws.freeze_panes = "A2"
+        for i, t in enumerate(noted, start=2):
+            note = t["research"]
+            ws.cell(row=i, column=1, value=t["id"])
+            ws.cell(row=i, column=2, value=t["symbol"])
+            ws.cell(row=i, column=3, value=note["headline"])
+            ws.cell(row=i, column=4, value=note["thesis"])
+            ws.cell(row=i, column=5, value=note["plan"])
+            ws.cell(row=i, column=6, value="; ".join(note["caveats"]) or "nothing flagged")
+            ws.cell(row=i, column=7, value=t["realized_r"])
+            ws.cell(row=i, column=8, value=t["close_reason"])
+            ws.row_dimensions[i].height = 110
+        style_data(ws, 2, len(noted) + 1, len(cols), {7: RMULT})
+        for i in range(2, len(noted) + 2):
+            for col in (3, 4, 5, 6):
+                ws.cell(row=i, column=col).alignment = Alignment(
+                    wrap_text=True, vertical="top"
+                )
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(cols))}{len(noted) + 1}"
 
     # ---------------- Summary -----------------------------------------
     ws = wb.create_sheet("Summary")

@@ -192,6 +192,9 @@ i_showLabels  = input.bool(true, "Label formations & scores", group = G_VIEW)
 i_showLevels  = input.bool(true, "Plot live SL / TP levels", group = G_VIEW)
 i_showWick    = input.bool(true, "Mark wick-only penetrations (Ch V-B)", group = G_VIEW)
 i_showPanel   = input.bool(true, "Show status panel", group = G_VIEW)
+i_showResearch = input.bool(true, "Show research note (Ch XIII-A)", group = G_VIEW,
+     tooltip = "Why the current setup qualifies: the three screens, the Ch XI " +
+               "scorecard, the plan, and what is weak about it.")
 
 // ───────────────────────────────────────────────────────────────────────────
 //  DERIVED SETTINGS
@@ -510,6 +513,7 @@ var int       stAge      = 0     // bars since the state last advanced
 var int       armAge     = 0     // bars armed without a break
 var float     brkLevel   = 0.0   // key level at the moment of the break
 var bool      brkSurge   = false
+var float     brkVolMult = 0.0   // volume vs its average, kept for the note
 var float     retestWick = 0.0
 var line      neckLine   = na
 
@@ -576,6 +580,7 @@ if barstate.isconfirmed and state != "none"
             stAge    := 0
             brkLevel := neckNow
             brkSurge := volSurge
+            brkVolMult := volAvg > 0 ? volume / volAvg : 0.0
         else if armAge > i_expiryBars
             state := "none"
     else
@@ -686,6 +691,100 @@ riskAmt = strategy.equity * riskPct / 100.0
 qty     = stopDist > 0 and pointVal > 0 ? math.max(0.0, riskAmt / (stopDist * pointVal)) : 0.0
 
 // ───────────────────────────────────────────────────────────────────────────
+//  RESEARCH NOTE (Ch XIII-A) — why this setup qualifies
+// ───────────────────────────────────────────────────────────────────────────
+//  Ch XIII-A requires the reasoning to be recorded, not only the levels. Every
+//  line below is composed from the same series the decision above was made
+//  from — act.*, the state machine, the Ch XI factors, the sizing — so the
+//  note cannot describe a setup differently from how it is being traded.
+//
+//  The Python engine writes the same note to journal/tfbs_research.md; this is
+//  its on-chart form, and it is necessarily shorter: Pine sees one symbol, so
+//  nothing portfolio-level (Ch VIII-A aggregate risk, correlated exposure) can
+//  appear here.
+
+f_patternName(string kind) =>
+    kind == "H&S"    ? "Head & Shoulders"         :
+     kind == "InvH&S" ? "Inverse Head & Shoulders" :
+     kind == "DT"     ? "Double Top"               :
+     kind == "DB"     ? "Double Bottom"            :
+     kind == "TT"     ? "Triple Top"               :
+     kind == "TB"     ? "Triple Bottom"            : kind
+
+f_patternMeaning(string kind) =>
+    kind == "H&S"    ? "three pushes higher, the middle highest, all sold into" :
+     kind == "InvH&S" ? "three pushes lower, the middle deepest, all bought"     :
+     kind == "DT"     ? "the same ceiling rejected twice"                        :
+     kind == "DB"     ? "the same floor defended twice"                          :
+     kind == "TT"     ? "the same ceiling rejected three times"                  :
+     kind == "TB"     ? "the same floor defended three times"                    : ""
+
+qualityWord = act.qualityPts == 2 ? "textbook" : act.qualityPts == 1 ? "acceptable" : "ambiguous"
+dirWord     = dirSign > 0 ? "long" : "short"
+levelName   = act.kind == "H&S" or act.kind == "InvH&S" ? "neckline" : "confirmation line"
+
+// 1 — Screen 1: is the macro bias behind the trade?
+rsContext = state == "none" ? "" :
+             counterTrend ? "Screen 1 reads " + (htfBull ? "UP" : "DOWN") +
+                  ", against a " + dirWord + " — Appendix A blocks this (Ch IX)." :
+             (htfBull or htfBear) ? "Screen 1 (" + i_trendTF + ") reads " +
+                  (htfBull ? "UP" : "DOWN") + ", so a " + dirWord +
+                  " runs with the macro bias (Ch IX)." :
+             "Screen 1 is ranging, so this is traded on the formation alone (Ch IX)."
+
+// 2 — Screen 2: the formation and how cleanly it printed.
+rsFormation = state == "none" ? "" :
+               f_patternName(act.kind) + " on " + timeframe.period + " (" +
+                     f_patternMeaning(act.kind) + "), grading " + qualityWord +
+                     " — Ch XI pattern quality " + str.tostring(act.qualityPts) + "/2."
+
+// 3 — Screen 3: the break, and the retest when there was one.
+rsTrigger = state == "none" ? "" :
+             "Close through the " + levelName + " at " +
+                  str.tostring(math.round_to_mintick(brkLevel)) + " on " +
+                  str.tostring(math.round(brkVolMult, 2)) + "x average volume" +
+                  (brkSurge ? " (surge confirmed, Ch V-A)" : " (no surge)") +
+                  (state == "retested" or state == "ready" ?
+                       ", then the level held on the retest — Method " + methodCode +
+                       " fills there." : ", no retest yet.")
+
+// 4 — the payoff, measured exactly as Ch III-D / Ch IV-D specify.
+rsPayoff = state == "none" ? "" :
+             "Measured move projects " + str.tostring(math.round_to_mintick(tp1)) +
+                 ", worth " + str.tostring(math.round(rr, 2)) + "R against the stop at " +
+                 str.tostring(math.round_to_mintick(stopPx)) + "; firm floor is " +
+                 str.tostring(i_minRR) + ":1 (Ch VIII-A)."
+
+rsPlan = state == "none" or qty <= 0 ? "" :
+          "PLAN " + str.tostring(math.round(qty, 2)) + " @ " +
+               str.tostring(math.round_to_mintick(entryPx)) + " · SL " +
+               str.tostring(math.round_to_mintick(stopPx)) + " · TP1 " +
+               str.tostring(math.round_to_mintick(tp1)) + " · " +
+               str.tostring(math.round(riskPct, 2)) + "% risk"
+
+// What is weak about it. A note that lists only strengths is a sales pitch.
+rsWeak = (not brkSurge ? "volume below the " + str.tostring(i_volSurge) + "x surge threshold; " : "") +
+          (scSR == 0 ? "no independent S/R at the target; " : "") +
+          (scPath == 0 ? "S/R stands between entry and TP1; " : "") +
+          (scHTF < 2 ? "higher timeframe not fully behind it; " : "") +
+          (act.qualityPts < 2 ? "formation is not textbook; " : "")
+
+rsInvalid = state == "none" ? "" :
+             "Invalidated by a close back through " +
+                  str.tostring(math.round_to_mintick(neckNow +
+                       (act.bearish ? invalBuf : -invalBuf))) + " (Ch X-C)."
+
+// One-line form, for the entry alert payload and the chart label.
+rsOneLine = state == "none" ? "" :
+             f_patternName(act.kind) + " " + qualityWord + " q" +
+                  str.tostring(act.qualityPts) + "/2; break on " +
+                  str.tostring(math.round(brkVolMult, 2)) + "x volume" +
+                  (state == "retested" or state == "ready" ? " + retest held" : "") +
+                  "; HTF " + str.tostring(scHTF) + "/2; " +
+                  str.tostring(math.round(rr, 2)) + "R at " +
+                  str.tostring(math.round(riskPct, 2)) + "% risk"
+
+// ───────────────────────────────────────────────────────────────────────────
 //  EXECUTION (Ch VI-A step 6)
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -711,13 +810,16 @@ var bool   beDone = false
 var bool   tp1Hit = false
 var float  curStop = 0.0
 
+// The "why" field carries the one-line research note, so a webhook receiver
+// logs the reasoning with the order rather than the levels alone (Ch XIII-A).
 alertEntry = str.format(
      '{{"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"{0}","tf":"{1}",' +
      '"action":"{2}","pattern":"{3}","grade":"{4}","score":{5},"method":"{6}",' +
-     '"entry":{7},"sl":{8},"tp1":{9},"tp2":{10},"tp3":{11},"rr":{12},"risk_pct":{13},"qty":{14}}}',
+     '"entry":{7},"sl":{8},"tp1":{9},"tp2":{10},"tp3":{11},"rr":{12},"risk_pct":{13},' +
+     '"qty":{14},"why":"{15}"}}',
      syminfo.ticker, timeframe.period, dirSign > 0 ? "BUY" : "SELL", act.kind, grade,
      score, methodCode, entryPx, stopPx, tp1, tp2, tp3,
-     math.round(rr, 2), math.round(riskPct, 2), qty)
+     math.round(rr, 2), math.round(riskPct, 2), qty, rsOneLine)
 
 if canEnter
     // Branch rather than passing a ternary as the direction: strategy.entry
@@ -741,8 +843,10 @@ if canEnter
     tp1Hit  := false
     if i_showLabels
         label.new(bar_index, dirSign > 0 ? low : high,
-             str.format("{0} {1}\n{2}/10 · {3}R · {4}%", grade, act.kind, score,
-                  math.round(rr, 1), math.round(riskPct, 2)),
+             str.format("{0} {1}\n{2}/10 · {3}R · {4}%{5}", grade, act.kind, score,
+                  math.round(rr, 1), math.round(riskPct, 2),
+                  i_showResearch ? "\n\n" + rsContext + "\n" + rsFormation + "\n" +
+                       rsTrigger + "\n" + rsPayoff : ""),
              style = dirSign > 0 ? label.style_label_up : label.style_label_down,
              color = grade == "ELITE" ? color.new(color.orange, 10) : color.new(color.blue, 20),
              textcolor = color.white, size = size.small)
@@ -861,6 +965,40 @@ if i_showPanel and barstate.islast
          text_color = weeklyHalt ? color.red : color.green)
     table.cell(panel, 0, 8, "Status", text_size = size.tiny)
     table.cell(panel, 1, 8, statusTxt, text_color = statusCol, text_size = size.tiny)
+
+// Ch XIII-A research note, in its on-chart form. One sentence per row: Pine
+// does not wrap cell text, so a single long cell would run off the chart.
+var table research = table.new(position.bottom_right, 1, 10, border_width = 1,
+     frame_width = 1, frame_color = color.gray)
+
+if i_showResearch and barstate.islast
+    table.cell(research, 0, 0,
+         state == "none" ? "RESEARCH — no live formation" :
+              "RESEARCH — " + syminfo.ticker + " " + str.upper(dirWord) + " · " +
+                   f_patternName(act.kind) + " · " + grade + " " +
+                   str.tostring(score) + "/10",
+         text_color = color.white, text_size = size.tiny,
+         bgcolor = color.new(color.blue, 20))
+    table.cell(research, 0, 1, rsContext,   text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 2, rsFormation, text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 3, rsTrigger,   text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 4, rsPayoff,    text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 5,
+         state == "none" ? "" :
+              "Ch XI: pattern " + str.tostring(scPattern) + "/2 · breakout " +
+                   str.tostring(scBreakout) + "/2 · retest " + str.tostring(scRetest) +
+                   "/1 · HTF " + str.tostring(scHTF) + "/2 · S/R " + str.tostring(scSR) +
+                   "/1 · R:R " + str.tostring(scRR) + "/1 · path " + str.tostring(scPath) + "/1",
+         text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 6, rsPlan, text_size = size.tiny, text_halign = text.align_left,
+         text_color = color.teal)
+    table.cell(research, 0, 7, rsWeak == "" ? "" : "WEAK: " + rsWeak,
+         text_size = size.tiny, text_halign = text.align_left, text_color = color.orange)
+    table.cell(research, 0, 8, rsInvalid, text_size = size.tiny, text_halign = text.align_left)
+    table.cell(research, 0, 9,
+         "Portfolio rules (Ch VIII-A 5% aggregate, correlated cap) are not " +
+              "enforceable in Pine — the engine remains the authority.",
+         text_size = size.tiny, text_halign = text.align_left, text_color = color.gray)
 
 // ───────────────────────────────────────────────────────────────────────────
 //  ALERTS — Ch VI-B watchlist transitions

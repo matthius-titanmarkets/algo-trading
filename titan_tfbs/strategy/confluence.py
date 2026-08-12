@@ -77,7 +77,7 @@ def score_setup(
     if retest is not None:
         score.retest_confirm = cfg.max_retest_confirm
         score.reasons["retest_confirm"] = (
-            f"clean retest with {retest.rejection_kind} rejection"
+            f"clean retest with {retest.rejection_kind.replace('_', ' ')} rejection"
             + (" + follow-through" if retest.followthrough else "")
         )
     else:

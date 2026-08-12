@@ -154,6 +154,10 @@ def main(argv=None) -> int:
             "tp1": p.signal.take_profit_1,
             "tp2": p.signal.take_profit_2,
             "score_breakdown": p.signal.score.breakdown(),
+            # Ch XIII-A: the reasoning travels with the levels, so the PDF and
+            # the workbook can show why each trade was taken without
+            # re-deriving it from the numbers.
+            "research": p.signal.research.to_dict() if p.signal.research else None,
         }
         for p in bot.closed_positions
     ]

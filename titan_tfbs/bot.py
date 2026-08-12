@@ -33,6 +33,7 @@ from titan_tfbs.risk.compliance import ComplianceMonitor, Rule
 from titan_tfbs.risk.manager import RiskManager
 from titan_tfbs.strategy.breakout import BROKEN, READY, RETESTED
 from titan_tfbs.strategy.checklist import ChecklistResult, build_checklist
+from titan_tfbs.strategy.research import ResearchNote, build_note
 from titan_tfbs.strategy.signals import TradeSignal
 from titan_tfbs.strategy.tfbs import SetupEvaluation, TFBSStrategy
 
@@ -380,6 +381,13 @@ class TFBSBot:
             entry_price=position.entry_price,
             stop_loss=position.stop_loss,
         )
+        # The research note is written before the entry is announced so that
+        # `signal.summary()` — and therefore the journal and every report —
+        # carries the reasoning alongside the levels (Ch XIII-A).
+        self._write_research(
+            signal, evaluation.alignment, instrument, checklist,
+            fill_price=position.entry_price, trade_id=position.id,
+        )
         self.journal.log_signal(candle.ts, symbol, True, "executed", signal=signal)
         self._emit(
             candle.ts, symbol, "entry",
@@ -391,10 +399,62 @@ class TFBSBot:
             trade_id=position.id,
             signal=signal.summary(),
         )
+        if signal.research is not None:
+            # A separate event so a console can print the note in full while
+            # a log consumer can ignore it.
+            self._emit(
+                candle.ts, symbol, "research",
+                signal.research.overview(indent=""),
+                trade_id=position.id,
+                note=signal.research,
+                research=signal.research.to_dict(),
+            )
+
+    def _write_research(
+        self,
+        signal: TradeSignal,
+        alignment,
+        instrument: Optional[Instrument],
+        checklist: Optional[ChecklistResult],
+        *,
+        taken: bool = True,
+        blocked_by: str = "",
+        fill_price: Optional[float] = None,
+        trade_id: str = "",
+    ) -> Optional[ResearchNote]:
+        """Build and file the Ch XIII-A write-up for a signal."""
+        if not self.config.journal.log_research:
+            return None
+        if not taken and not self.config.journal.log_research_for_skipped:
+            return None
+        note = build_note(
+            signal,
+            alignment,
+            self.config,
+            instrument=instrument,
+            taken=taken,
+            blocked_by=blocked_by,
+            checklist=checklist,
+            fill_price=fill_price,
+        )
+        signal.research = note
+        self.journal.log_research(note)
+        return note
 
     def _record_rejection(
         self, evaluation: SetupEvaluation, checklist: Optional[ChecklistResult] = None
     ) -> None:
+        # A rejection that never produced a signal (an expired or invalidated
+        # formation) has nothing to write a note about.
+        if evaluation.signal is not None:
+            self._write_research(
+                evaluation.signal,
+                evaluation.alignment,
+                self.instruments.get(evaluation.symbol),
+                checklist,
+                taken=False,
+                blocked_by=evaluation.reason,
+            )
         self.journal.log_signal(
             evaluation.ts,
             evaluation.symbol,

@@ -73,12 +73,17 @@ def load_candles(
     return out
 
 
+#: How much of the Ch XIII-A research note the console prints per trade.
+RESEARCH_MODES = ("off", "summary", "full")
+
+
 def run_session(
     config: TitanConfig,
     candles: Dict[str, List[Candle]],
     calendar: Optional[EconomicCalendar] = None,
     quiet: bool = False,
     source_label: str = "",
+    research: str = "summary",
 ) -> TFBSBot:
     """Replay ``candles`` through a live bot, printing as it trades."""
     if not candles:
@@ -86,6 +91,17 @@ def run_session(
 
     def on_event(event: BotEvent) -> None:
         if quiet:
+            return
+        if event.kind == "research":
+            # The note is already formatted prose — print it as written, not
+            # squeezed onto the one-line event format.
+            note = event.payload.get("note")
+            if note is None:
+                return
+            if research == "summary":
+                print(f"{note.overview(indent='     ')}\n", flush=True)
+            elif research == "full":
+                print(f"\n{note.render(indent='     ')}\n", flush=True)
             return
         # Session rollovers are noise; everything else is worth seeing.
         interesting = event.kind in ("entry", "exit", "compliance") or (
@@ -117,6 +133,11 @@ def run_session(
         f"{'/'.join(config.mtf.entry_timeframes)}"
     )
     print(f"  source    {source_label or 'deterministic synthetic data'}")
+    print(
+        f"  research  {research}"
+        + (f"  ->  {config.journal.directory}/{config.journal.research_log}"
+           if config.journal.enabled and config.journal.log_research else "")
+    )
     print(f"\nstreaming {sum(len(c) for c in candles.values()):,} 5M candles...\n")
 
     # Interleave symbols in strict timestamp order: the Ch VIII-A portfolio
@@ -182,6 +203,8 @@ def build_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
     ap.add_argument("--profile", choices=[p.value for p in TraderProfile],
                     help="prop_desk (1-2%%) or titan_entry (0.5%%, Method C)")
     ap.add_argument("--quiet", action="store_true", help="summary only, no event stream")
+    ap.add_argument("--research", choices=RESEARCH_MODES, default="summary",
+                    help="per-trade research note: off, summary (default) or full")
     return ap
 
 
@@ -240,5 +263,12 @@ def main(argv: Optional[Sequence[str]] = None, prog: Optional[str] = None) -> in
     candles = load_candles(symbols, args.data)
     calendar = EconomicCalendar.from_file(args.calendar) if args.calendar else None
 
-    run_session(cfg, candles, calendar, quiet=args.quiet, source_label=args.data or "")
+    run_session(
+        cfg,
+        candles,
+        calendar,
+        quiet=args.quiet,
+        source_label=args.data or "",
+        research=args.research,
+    )
     return 0

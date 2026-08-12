@@ -50,6 +50,12 @@ TITAN MARKETS LLC — TFBS bot online
 streaming 8,460 5M candles...
 
   [2026-01-09 06:15] GC entry: APPROVED H&S short 30 @ 2693.50000 SL 2695.54192 ...
+     RESEARCH — GC SHORT · Head & Shoulders on 1H · APPROVED 7/10
+       Screen 1 has no directional bias, so this is traded on the formation
+       alone rather than as a trend continuation (Ch IX). A Head & Shoulders
+       completed on the 1H over 34 bars ...
+       PLAN: 30 contracts @ 2,693.50, SL 2,695.54, TP1 2,634.88 — 1.21% ...
+       ! breakout volume 1.01x is below the Ch V-A 1.5x surge threshold
   [2026-01-09 16:25] GC exit: tp1_measured_move 15 @ 2635.00000 (+28.65R, +87,720.00)
 
 session closed at 2026-01-19T16:25
@@ -60,6 +66,35 @@ session closed at 2026-01-19T16:25
 Useful flags: `--data ./data` to replay real CSVs instead of synthetic bars,
 `--profile titan_entry` for the 0.5%/Method C rule set, `--calendar cal.csv`
 to enable the Ch XII-A6 news blackout, `--quiet` for summary only.
+
+## The research note — "why did it take that trade?"
+
+Every executed trade gets a Ch XIII-A write-up, printed at the fill and
+appended to `journal/tfbs_research.md`. Reach for this when asked why the bot
+entered, or to review a session after the fact.
+
+```bash
+python main.py --symbols GC,NQ                  # summary note (default)
+python main.py --symbols GC,NQ --research full  # every screen, factor by factor
+python main.py --symbols GC,NQ --research off   # fills only
+titan-tfbs scan --data ./data --research full   # notes without committing capital
+```
+
+`--research full` prints the three Ch IX screens, the Ch XI scorecard with the
+scorer's own justification per factor, the Ch X exit ladder and the
+invalidation conditions.
+
+`strategy/research.py` builds the note from the same `TradeSignal`,
+`MTFAlignment` and `ConfluenceScore` objects the engine decided on — there is
+no second code path, so a note cannot describe a trade differently from how it
+was taken. It reports weaknesses too (missed preferred filters, thin volume,
+an obstructed path to TP1), recorded at entry before the outcome is known.
+Do not "improve" a note by writing prose that is not derived from a decision
+object; `tests/test_research.py` fails if the text and the scorecard disagree.
+
+Config: `journal.log_research` (default on), `journal.log_research_for_skipped`
+(default off — turning it on writes a note for every refused setup too, which
+is verbose but is the better teaching record).
 
 ## The CLI
 
@@ -118,7 +153,7 @@ write_csv("data/GC.csv", firm_scenario(s, 2650.0, 0.022, seed=17, plan=COMPACT_P
 ## Tests
 
 ```bash
-python -m pytest tests/ -q       # 153 tests, ~43s
+python -m pytest tests/ -q       # 171 tests, ~40s
 ```
 
 `tests/test_integration.py` is the slow one (~34s); it shares one compact

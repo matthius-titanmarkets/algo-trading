@@ -88,6 +88,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_scan.add_argument("--data", required=True, help="directory of SYMBOL.csv files")
     p_scan.add_argument("--json", action="store_true", help="emit JSON")
+    p_scan.add_argument(
+        "--research",
+        choices=("off", "summary", "full"),
+        default="summary",
+        help="per-setup research note: off, summary (default) or full",
+    )
     p_scan.set_defaults(handler=_cmd_scan)
 
     p_demo = sub.add_parser(
@@ -181,6 +187,7 @@ def _cmd_scan(args) -> int:
     """
     from titan_tfbs.core.candles import MultiTimeframeStore, TimeFrame
     from titan_tfbs.instruments import get_instrument
+    from titan_tfbs.strategy.research import build_note
     from titan_tfbs.strategy.tfbs import TFBSStrategy
 
     cfg = _config_from_args(args)
@@ -189,6 +196,7 @@ def _cmd_scan(args) -> int:
 
     strategy = TFBSStrategy(cfg)
     setups: List[dict] = []
+    notes: List = []
     watchlists: dict = {}
 
     for symbol in universe:
@@ -202,8 +210,18 @@ def _cmd_scan(args) -> int:
         for candle in candles:
             closed = store.push(candle)
             for evaluation in strategy.on_candles(symbol, store, closed, candle.ts):
-                if evaluation.accepted:
-                    setups.append(evaluation.summary())
+                if not evaluation.accepted:
+                    continue
+                # Scanning stops before SIZE, so the note carries no position
+                # size — everything above that step is fully determined.
+                evaluation.signal.research = build_note(
+                    evaluation.signal,
+                    evaluation.alignment,
+                    cfg,
+                    instrument=instrument,
+                )
+                notes.append(evaluation.signal.research)
+                setups.append(evaluation.summary())
         watchlists[symbol] = strategy.watchlist(symbol)
 
     if args.json:
@@ -223,7 +241,7 @@ def _cmd_scan(args) -> int:
                 f"quality {item['quality_points']}/2  state={item['watch_state']}"
             )
     print(f"\nSetups that passed SCAN -> VALIDATE -> CONFIRM -> SCORE: {len(setups)}")
-    for s in setups:
+    for s, note in zip(setups, notes):
         sig = s["signal"]
         print(
             f"  {s['ts'][:16]}  {s['symbol']:<8} {sig['pattern']:<8} "
@@ -231,6 +249,10 @@ def _cmd_scan(args) -> int:
             f"entry {sig['entry']:<12.5f} SL {sig['stop_loss']:<12.5f} "
             f"TP1 {sig['tp1']:<12.5f} R:R {sig['rr']:.2f}"
         )
+        if args.research == "summary":
+            print(f"{note.overview(indent='     ')}\n")
+        elif args.research == "full":
+            print(f"\n{note.render(indent='     ')}\n")
     if setups:
         print(
             "\nThese have not been sized or checklisted — run `backtest` or the "

@@ -458,9 +458,17 @@ class JournalConfig:
     trade_log: str = "tfbs_trades.csv"
     signal_log: str = "tfbs_signals.csv"
     equity_log: str = "tfbs_equity.csv"
+    #: Ch XIII-A asks for the reasoning behind a trade, not only its levels.
+    #: The engine writes that research note as markdown alongside the CSVs.
+    research_log: str = "tfbs_research.md"
     #: TFBS Ch XII-A4: skipped trades are logged too ("wins, losses, BE,
     #: skipped").
     log_skipped_setups: bool = True
+    #: Write a research note for every executed trade.
+    log_research: bool = True
+    #: Write one for the setups the engine refused as well. Ch XII-A4 logs
+    #: skipped trades either way; this adds the narrative for them.
+    log_research_for_skipped: bool = False
 
 
 @dataclass

@@ -65,6 +65,37 @@ tooltip:
 The status panel (top right) shows the live bias, formation, state machine,
 score, R:R and drawdown status.
 
+### The research note (Ch XIII-A)
+
+The panel at the **bottom right** answers "why would it take this trade?" for
+whatever setup is currently live — one sentence per screen, then the Ch XI
+scorecard factor by factor, the plan, what is weak about the setup, and the
+price that would invalidate it:
+
+```
+RESEARCH — GC1! SHORT · Head & Shoulders · APPROVED 7/10
+Screen 1 (D) reads DOWN, so a short runs with the macro bias (Ch IX).
+Head & Shoulders on 240 (three pushes higher, the middle highest, all sold
+  into), grading textbook — Ch XI pattern quality 2/2.
+Close through the neckline at 2692.4 on 2.41x average volume (surge
+  confirmed, Ch V-A), then the level held on the retest — Method B fills there.
+Measured move projects 2634.9, worth 29.57R against the stop at 2695.5;
+  firm floor is 2:1 (Ch VIII-A).
+Ch XI: pattern 2/2 · breakout 2/2 · retest 1/1 · HTF 2/2 · S/R 0/1 · R:R 1/1
+PLAN 30 @ 2693.5 · SL 2695.5 · TP1 2634.9 · 1.25% risk
+WEAK: no independent S/R at the target;
+Invalidated by a close back through 2695.4 (Ch X-C).
+```
+
+Every line is composed from the same series the entry decision is made from,
+so the note cannot describe a setup differently from how it is traded. Turn it
+off with **Show research note** under *Display*; the same setting expands the
+entry label on the chart with the four screen sentences.
+
+This is the on-chart form of what the Python engine writes to
+`journal/tfbs_research.md`, and it is necessarily shorter — nothing
+portfolio-level can appear here, for the reasons below.
+
 ---
 
 ## What Pine cannot enforce
@@ -78,7 +109,7 @@ engine still runs the book:
 | **Ch VIII-A** max 2 correlated positions | Same reason — no cross-symbol view. |
 | **Ch XII-A6** news blackout | Pine has no economic calendar. Approximated by a manual session window input, off by default. |
 | **Ch XII-C** compliance escalation | Requires state persisted across sessions and accounts. |
-| **Ch XIII** journal | The Strategy Tester's trade list is the closest equivalent; it does not carry the Ch XIII-A field set. |
+| **Ch XIII** journal | The Strategy Tester's trade list is the closest equivalent; it does not carry the Ch XIII-A field set. The research note covers the *reasoning* half of Ch XIII-A on the chart, but nothing persists it — the engine does. |
 
 Two further divergences worth knowing:
 
@@ -99,8 +130,12 @@ Both the entries and the Ch X-B exits carry a JSON `alert_message`:
 {"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"GC1!","tf":"60",
  "action":"SELL","pattern":"H&S","grade":"APPROVED","score":8,"method":"B",
  "entry":2693.5,"sl":2695.54,"tp1":2634.88,"tp2":2626.84,"tp3":2577.37,
- "rr":29.57,"risk_pct":1.25,"qty":30}
+ "rr":29.57,"risk_pct":1.25,"qty":30,
+ "why":"Head & Shoulders textbook q2/2; break on 2.41x volume + retest held; HTF 2/2; 29.57R at 1.25% risk"}
 ```
+
+The `why` field is the one-line research note, so a webhook receiver logs the
+reasoning next to the order rather than the levels alone (Ch XIII-A).
 
 To wire it up: right-click the chart → **Add alert** → Condition: your TFBS
 strategy → Message: `{{strategy.order.alert_message}}` → add your broker's
