@@ -19,7 +19,7 @@ Checks performed
        state for those; calling them conditionally corrupts it silently)
     6. every `x :=` targets something previously declared with `=`
 
-    python tradingview/check_pine.py                 # checks the bundled file
+    python tradingview/check_pine.py                 # checks every bundled file
     python tradingview/check_pine.py path/to.pine    # or any other
 
 Exit code is 0 when clean, 1 when something is flagged. This is a linter, not
@@ -33,7 +33,9 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-DEFAULT_TARGET = Path(__file__).with_name("titan_tfbs_strategy.pine")
+#: With no argument, every Pine file in this directory is checked — the
+#: strategy and the indicator are separate builds and both need the pass.
+DEFAULT_TARGETS = sorted(Path(__file__).parent.glob("*.pine"))
 
 #: A line ending in one of these is continued on the next line.
 _TAIL = re.compile(r"(\bor|\band|[?:+,=*/\-([])\s*$")
@@ -179,21 +181,30 @@ def check(text: str) -> List[str]:
 
 def main(argv: List[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
-    target = Path(args[0]) if args else DEFAULT_TARGET
-    if not target.exists():
-        print(f"not found: {target}", file=sys.stderr)
+    targets = [Path(a) for a in args] if args else DEFAULT_TARGETS
+    if not targets:
+        print("no .pine files to check", file=sys.stderr)
         return 2
 
-    problems = check(target.read_text())
-    if not problems:
-        print(f"{target.name}: clean — no known Pine traps found")
-        print("  (a linter, not a compiler: TradingView is still the real test)")
-        return 0
+    status = 0
+    for target in targets:
+        if not target.exists():
+            print(f"not found: {target}", file=sys.stderr)
+            status = max(status, 2)
+            continue
+        problems = check(target.read_text())
+        if not problems:
+            print(f"{target.name}: clean — no known Pine traps found")
+            continue
+        print(f"{target.name}: {len(problems)} problem(s)\n")
+        for p in problems:
+            print(f"  {p}")
+        print()
+        status = max(status, 1)
 
-    print(f"{target.name}: {len(problems)} problem(s)\n")
-    for p in problems:
-        print(f"  {p}")
-    return 1
+    if status == 0:
+        print("  (a linter, not a compiler: TradingView is still the real test)")
+    return status
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1517 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════
+//  TITAN MARKETS LLC — TITAN FORMATION BREAKOUT SYSTEM (TFBS)  ·  INDICATOR
+//  Proprietary & Confidential.  (c) 2026 Titan Markets LLC, Chicago, Illinois.
+//
+//  Chapter references are to the TFBS Master Strategy Manual v1.0 (April 2026)
+//  and the 2026 Risk Management Guide (RMG).
+//
+//  This is the INDICATOR build of the system that titan_tfbs_strategy.pine runs
+//  as a strategy. It carries the whole Ch VI-A pipeline — SCAN, VALIDATE,
+//  CONFIRM, SCORE, SIZE, EXECUTE, MANAGE — but places no orders. Instead it:
+//
+//    - draws the formation, neckline, entry, stop and the Ch X-B target ladder
+//    - scores every setup out of 10 (Ch XI) and grades it
+//    - sizes the position off your account input (Ch VIII-A)
+//    - renders the Appendix A pre-trade checklist, item by item
+//    - tracks a PAPER position so the Ch X management rules (breakeven, trail,
+//      partials, Ch X-C exits) and the Ch VIII-A daily / weekly loss limits are
+//      live on the chart rather than merely described
+//    - fires alerts at every watchlist transition, so one indicator can scan a
+//      basket of symbols where a strategy per symbol is impractical
+//
+//  Run it on the Ch IX Screen 2 timeframe — 4H or 1H. The Screen 1 bias is
+//  pulled from the Daily and Weekly via request.security.
+//
+//  KNOWN LIMITS vs the Python engine (see tradingview/README.md):
+//    - Pine sees one symbol, so the Ch VIII-A aggregate 5% open risk and the
+//      2-per-sector correlated cap CANNOT be enforced here. Per-trade risk and
+//      the daily/weekly loss limits are enforced against the paper equity.
+//    - No economic calendar exists in Pine. Ch XII-A6 is approximated by a
+//      manual blackout window.
+//    - Breakout and retest are confirmed on the chart timeframe rather than on
+//      a separate 15M/5M screen.
+//    - The paper ledger is a compliance aid, not a backtest. For the Ch XIII-B
+//      performance numbers use the strategy build and the Strategy Tester.
+// ═══════════════════════════════════════════════════════════════════════════
+
+indicator("Titan TFBS — Formation Breakout System [Indicator]", "TFBS-I",
+     overlay          = true,
+     max_bars_back    = 1000,
+     max_lines_count  = 500,
+     max_labels_count = 500,
+     max_boxes_count  = 100)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  INPUTS  — these mirror config/titan.yaml field for field
+// ───────────────────────────────────────────────────────────────────────────
+
+var string G_PROFILE = "1 · Firm profile & risk (Ch VIII-A, Ch XII-B)"
+var string G_PATTERN = "2 · Pattern filters (Ch III-E, Ch IV-C)"
+var string G_BREAK   = "3 · Breakout protocol (Ch V)"
+var string G_ENTRY   = "4 · Entry methodology (Ch VII)"
+var string G_SCORE   = "5 · Confluence scoring (Ch XI)"
+var string G_MTF     = "6 · Multi-timeframe (Ch IX)"
+var string G_MANAGE  = "7 · Trade management (Ch X)"
+var string G_COMPLY  = "8 · Compliance (Ch XII, Appendix A)"
+var string G_VIEW    = "9 · Display"
+
+// ── Profile & risk ─────────────────────────────────────────────────────────
+i_profile     = input.string("Prop Desk", "Trader profile",
+     options = ["Prop Desk", "Titan Entry"], group = G_PROFILE,
+     tooltip = "Prop Desk: 1-2% per trade (Ch VIII-A). Titan Entry: 0.50% cap and " +
+               "Method C entries until 30 consecutive positive trades (Ch XII-B).")
+i_account     = input.float(500000, "Account size", minval = 100, step = 1000,
+     group = G_PROFILE, tooltip = "An indicator has no broker connection, so position " +
+               "sizing and the Ch VIII-A loss limits are measured against this figure " +
+               "and the paper ledger built from it.")
+i_riskElite   = input.float(2.0,  "ELITE risk % (score 9-10)", minval = 0.1, maxval = 2.0,
+     step = 0.05, group = G_PROFILE, tooltip = "Ch XI: ELITE takes full size, up to 2%.")
+i_riskApprove = input.float(1.25, "APPROVED risk % (score 7-8)", minval = 0.1, maxval = 2.0,
+     step = 0.05, group = G_PROFILE, tooltip = "Ch XI: APPROVED takes the 1-1.5% band.")
+i_minRR       = input.float(2.0,  "Minimum reward:risk", minval = 1.0, step = 0.1,
+     group = G_PROFILE, tooltip = "Ch VIII-A HARD LIMIT: below 2:1 = skip the trade.")
+i_dailyLoss   = input.float(3.0,  "Daily loss limit %", minval = 0.5, step = 0.5,
+     group = G_PROFILE, tooltip = "Ch VIII-A / Ch XII-A5: 3% = cease trading for the day.")
+i_weeklyLoss  = input.float(6.0,  "Weekly loss limit %", minval = 1.0, step = 0.5,
+     group = G_PROFILE, tooltip = "Ch VIII-A / Ch XII-A5: 6% = mandatory cessation.")
+i_ddRestrict  = input.float(2.0,  "Daily DD -> size cap %", minval = 0.5, step = 0.5,
+     group = G_PROFILE, tooltip = "RMG s.05: the 2-3% band enforces a position size cap.")
+i_restrictMul = input.float(0.5,  "Size cap multiplier", minval = 0.1, maxval = 1.0,
+     step = 0.1, group = G_PROFILE)
+i_aggRisk     = input.float(5.0,  "Aggregate open risk cap %", minval = 1.0, step = 0.5,
+     group = G_PROFILE, tooltip = "Ch VIII-A. Pine sees one symbol, so this is checked " +
+               "against THIS chart's paper position only — the checklist marks it manual.")
+i_pointValue  = input.float(0.0,  "Point value override (0 = auto)", minval = 0.0,
+     group = G_PROFILE, tooltip = "Leave at 0 to use the symbol's own point value. Set this " +
+               "if your broker's contract differs from TradingView's.")
+
+// ── Pattern filters ────────────────────────────────────────────────────────
+i_pivotLen    = input.int(3,   "Swing lookback (fractal half-width)", minval = 2, maxval = 10,
+     group = G_PATTERN)
+i_priorBars   = input.int(20,  "Prior trend minimum bars", minval = 5, maxval = 200,
+     group = G_PATTERN, tooltip = "Ch III-E / Ch IV-C MANDATORY: a clear established trend " +
+               "must precede the formation — these are reversal patterns.")
+i_priorATR    = input.float(2.0, "Prior trend minimum ATR", minval = 0.5, step = 0.25,
+     group = G_PATTERN)
+i_symTol      = input.float(0.20, "Shoulder symmetry tolerance", minval = 0.05, maxval = 1.0,
+     step = 0.05, group = G_PATTERN, tooltip = "Ch III-E PREFERRED: shoulders within 20% of " +
+               "each other in height and duration.")
+i_neckAngle   = input.float(15.0, "Max neckline angle (deg)", minval = 1.0, maxval = 60.0,
+     group = G_PATTERN, tooltip = "Ch III-E: flat or gently sloping (< 15 degrees). " +
+               "ATR-normalised so it is scale free: 1 ATR per bar = 45 degrees.")
+i_minFormBars = input.int(20,  "Minimum formation bars", minval = 5, group = G_PATTERN,
+     tooltip = "Ch III-E PREFERRED: developed over 20+ bars.")
+i_maxFormBars = input.int(200, "Maximum formation bars", minval = 20, maxval = 400,
+     group = G_PATTERN)
+i_headProm    = input.float(0.10, "Minimum head prominence", minval = 0.02, maxval = 0.5,
+     step = 0.01, group = G_PATTERN, tooltip = "The head must clear both shoulders by this " +
+               "fraction of pattern height, else the three peaks are a range.")
+i_levelTol    = input.float(0.15, "DT/DB level proximity (x height)", minval = 0.02, maxval = 1.0,
+     step = 0.01, group = G_PATTERN, tooltip = "Ch IV-C says peaks within 1-3%, which is far " +
+               "too loose on FX (3% of EURUSD is 375 pips), so proximity is also bounded as a " +
+               "fraction of the pattern's own height.")
+i_ctxLookback = input.int(100, "Range-context lookback", minval = 20, maxval = 300,
+     group = G_PATTERN, tooltip = "Ch IV-C: 'Pattern must NOT form inside a wider range.'")
+i_ctxTol      = input.float(0.20, "Apex must cap the range within", minval = 0.05, maxval = 0.6,
+     step = 0.05, group = G_PATTERN)
+i_volDecline  = input.bool(false, "Require declining volume profile", group = G_PATTERN,
+     tooltip = "Ch III-C / Ch IV-C list this as PREFERRED, not mandatory.")
+
+// ── Breakout protocol ──────────────────────────────────────────────────────
+i_closeBuf    = input.float(0.05, "Close-beyond buffer (ATR)", minval = 0.0, step = 0.01,
+     group = G_BREAK, tooltip = "Ch V-A criterion 1 REQUIRED: the candle must CLOSE beyond " +
+               "the key level. Wicks are never confirmation.")
+i_volSurge    = input.float(1.5, "Volume surge multiple", minval = 1.0, step = 0.1,
+     group = G_BREAK, tooltip = "Ch V-A criterion 2 STRONG PREF: volume > 1.5x the " +
+               "20-period average.")
+i_volLen      = input.int(20, "Volume average period", minval = 5, group = G_BREAK)
+i_rejectLowVol= input.bool(false, "Reject low-volume breaks outright", group = G_BREAK,
+     tooltip = "Ch V-A criterion 2 is STRONG PREF, not REQUIRED. Off by default.")
+i_retestBars  = input.int(40, "Retest window (bars)", minval = 1, group = G_BREAK)
+i_retestTol   = input.float(0.75, "Retest zone (ATR)", minval = 0.1, step = 0.05,
+     group = G_BREAK, tooltip = "A retest is a zone, not a price.")
+i_invalBuf    = input.float(1.25, "Flip-failure buffer (ATR)", minval = 0.2, step = 0.05,
+     group = G_BREAK, tooltip = "MUST exceed the retest zone above: price inside the zone is " +
+               "retesting, not invalidating.")
+i_expiryBars  = input.int(60, "Armed formation expiry (bars)", minval = 5, group = G_BREAK,
+     tooltip = "Ch VI-B: an unbroken formation is watchlist-only, and cannot stay there forever.")
+
+// ── Entry methodology ──────────────────────────────────────────────────────
+i_method      = input.string("B — Standard (retest)", "Entry method",
+     options = ["A — Aggressive (break close)", "B — Standard (retest)",
+                 "C — Conservative (retest + follow-through)"],
+     group = G_ENTRY, tooltip = "Ch VII: Method B is the FIRM DEFAULT. Titan Entry accounts " +
+               "are forced onto Method C by the profile setting.")
+i_stopBuf     = input.float(0.15, "Stop buffer (ATR)", minval = 0.0, step = 0.05, group = G_ENTRY)
+i_minStopATR  = input.float(0.50, "Minimum stop (ATR)", minval = 0.1, step = 0.05, group = G_ENTRY)
+i_minStopPat  = input.float(0.25, "Minimum stop (x pattern ATR)", minval = 0.0, step = 0.05,
+     group = G_ENTRY, tooltip = "The thesis being invalidated is a whole formation, so a stop " +
+               "scaled only to one bar's noise is not really protecting it.")
+i_maxStopATR  = input.float(6.0, "Maximum stop (ATR)", minval = 1.0, step = 0.5, group = G_ENTRY,
+     tooltip = "Wider than this and the measured move cannot realistically pay 2R.")
+
+// ── Confluence scoring ─────────────────────────────────────────────────────
+i_minScore    = input.int(7, "Minimum score to trade", minval = 0, maxval = 10, group = G_SCORE,
+     tooltip = "Ch XI: 'Only trades scoring 7/10 or higher are approved.'")
+i_eliteScore  = input.int(9, "ELITE threshold", minval = 5, maxval = 10, group = G_SCORE)
+i_watchScore  = input.int(5, "WATCHLIST threshold", minval = 1, maxval = 9, group = G_SCORE,
+     tooltip = "Ch XI: 5-6 is monitor-only. Below it the setup is discarded.")
+i_srTol       = input.float(0.75, "S/R confluence tolerance (ATR)", minval = 0.1, step = 0.05,
+     group = G_SCORE)
+i_lvlTolATR   = input.float(0.50, "S/R cluster tolerance (ATR)", minval = 0.1, step = 0.05,
+     group = G_SCORE, tooltip = "Swing pivots closer together than this are one level.")
+i_pathFrac    = input.float(0.75, "Clean-path scan fraction", minval = 0.2, maxval = 1.0,
+     step = 0.05, group = G_SCORE, tooltip = "Levels sitting right at TP1 do not count as " +
+               "obstacles — the target is meant to be at structure.")
+i_srTouches   = input.int(2, "Minimum touches for an obstacle", minval = 1, maxval = 5,
+     group = G_SCORE)
+
+// ── Multi-timeframe ────────────────────────────────────────────────────────
+i_trendTF     = input.timeframe("D", "Screen 1a — primary trend timeframe", group = G_MTF,
+     tooltip = "Ch IX: Daily/Weekly sets the macro directional bias.")
+i_trendTF2    = input.timeframe("W", "Screen 1b — confirming trend timeframe", group = G_MTF,
+     tooltip = "Ch IX: 'Higher TF trumps lower TF.' When the two disagree the longer one " +
+               "wins and the setup is flagged as divergent — full marks need convergence.")
+i_useTF2      = input.bool(true, "Use the second trend screen", group = G_MTF)
+i_emaFast     = input.int(20, "Bias fast EMA", minval = 2, group = G_MTF)
+i_emaSlow     = input.int(50, "Bias slow EMA", minval = 5, group = G_MTF)
+i_blockCounter= input.bool(true, "Block counter-trend setups", group = G_MTF,
+     tooltip = "Appendix A makes Screen 1 alignment MANDATORY, so counter-trend setups are " +
+               "blocked rather than merely penalised.")
+i_conflictMul = input.float(0.5, "Divergent-screen size factor", minval = 0.1, maxval = 1.0,
+     step = 0.1, group = G_MTF, tooltip = "Ch IX: 'Conflicting screens = reduce size or wait.'")
+i_noRepaint   = input.bool(true, "Use last CLOSED higher-TF bar (no repaint)", group = G_MTF,
+     tooltip = "On: the bias comes from the last completed Daily/Weekly bar, so the live " +
+               "chart matches the historical one. Off: the bias reads the developing HTF bar " +
+               "— more responsive, but the plot will repaint intraday. Leave this on.")
+
+// ── Trade management ───────────────────────────────────────────────────────
+i_paper       = input.bool(true, "Track a paper position (Ch X)", group = G_MANAGE,
+     tooltip = "On: the indicator carries one virtual position per chart so the breakeven, " +
+               "trail, partials and the daily/weekly loss limits are live. Off: signals and " +
+               "levels only.")
+i_beAtR       = input.float(1.0, "Breakeven at R", minval = 0.1, step = 0.1, group = G_MANAGE,
+     tooltip = "Ch X-A: move SL to BE at 1R. RMG s.03 warns against moving it there sooner.")
+i_beOffset    = input.float(0.05, "Breakeven offset (R)", minval = 0.0, step = 0.01, group = G_MANAGE)
+i_trailAtR    = input.float(1.5, "Trail from R", minval = 0.1, step = 0.1, group = G_MANAGE,
+     tooltip = "Ch X-A: after 1.5R trail on the most recent swing or the 20-EMA.")
+i_trailMode   = input.string("Swing", "Trail method", options = ["Swing", "EMA"], group = G_MANAGE)
+i_trailEMA    = input.int(20, "Trail EMA period", minval = 2, group = G_MANAGE)
+i_trailSwing  = input.int(10, "Trail swing lookback", minval = 2, group = G_MANAGE)
+i_trailBuf    = input.float(0.15, "Trail buffer (ATR)", minval = 0.0, step = 0.05, group = G_MANAGE)
+i_tp1Pct      = input.float(50, "TP1 allocation %", minval = 0, maxval = 100, step = 5,
+     group = G_MANAGE, tooltip = "Ch X-B: TP1 50% at the measured move.")
+i_tp2Pct      = input.float(30, "TP2 allocation %", minval = 0, maxval = 100, step = 5,
+     group = G_MANAGE, tooltip = "Ch X-B: TP2 30% at the next significant S/R.")
+i_tp2R        = input.float(3.0, "TP2 fallback (R)", minval = 1.0, step = 0.5, group = G_MANAGE,
+     tooltip = "Used only when no clustered S/R level sits beyond TP1.")
+i_maxBars     = input.int(288, "Max bars in trade", minval = 10, group = G_MANAGE,
+     tooltip = "Ch X-C: close a trade open 3x its expected duration without reaching TP1.")
+i_exitCounter = input.bool(true, "Exit on counter-pattern", group = G_MANAGE, tooltip = "Ch X-C")
+i_exitInval   = input.bool(true, "Exit on technical invalidation", group = G_MANAGE, tooltip = "Ch X-C")
+i_commission  = input.float(3.5, "Commission per contract (paper)", minval = 0.0, step = 0.5,
+     group = G_MANAGE)
+
+// ── Compliance ─────────────────────────────────────────────────────────────
+i_useBlackout = input.bool(false, "Enable news blackout window", group = G_COMPLY,
+     tooltip = "Ch XII-A6: no entries within 30 min before / 5 min after high-impact " +
+               "releases. Pine has no economic calendar, so this is a manual window.")
+i_blackout    = input.session("1230-1345", "Blackout session (exchange time)", group = G_COMPLY)
+i_tradeSess   = input.session("0000-2400", "Permitted trading session", group = G_COMPLY)
+i_journal     = input.bool(false, "Journal workflow confirmed (Ch XIII-A)", group = G_COMPLY,
+     tooltip = "Appendix A requires the trade to be logged with an annotated screenshot. " +
+               "Pine cannot write your journal — tick this to assert the workflow is running.")
+i_reqJournal  = input.bool(false, "Block signals until the journal is confirmed",
+     group = G_COMPLY, tooltip = "config/titan.yaml compliance.require_journal. On, the " +
+               "checkbox above becomes a mandatory checklist item.")
+
+// ── Display ────────────────────────────────────────────────────────────────
+i_showNeck    = input.bool(true,  "Draw necklines", group = G_VIEW)
+i_showPattern = input.bool(true,  "Draw the formation skeleton", group = G_VIEW)
+i_showLabels  = input.bool(true,  "Label formations & scores", group = G_VIEW)
+i_showLevels  = input.bool(true,  "Plot live entry / SL / TP levels", group = G_VIEW)
+i_showSR      = input.bool(false, "Plot clustered S/R levels", group = G_VIEW)
+i_showWick    = input.bool(true,  "Mark wick-only penetrations (Ch V-B)", group = G_VIEW)
+i_showPanel   = input.bool(true,  "Show status panel", group = G_VIEW)
+i_showCheck   = input.bool(true,  "Show Appendix A checklist", group = G_VIEW)
+i_panelPos    = input.string("Top right", "Status panel position",
+     options = ["Top right", "Middle right", "Bottom right", "Top left"], group = G_VIEW)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  DERIVED SETTINGS
+// ───────────────────────────────────────────────────────────────────────────
+
+isTitanEntry = i_profile == "Titan Entry"
+// Ch XII-B: Titan Entry is capped at 0.50% and forced onto Method C.
+riskElite    = isTitanEntry ? 0.5 : i_riskElite
+riskApproved = isTitanEntry ? 0.5 : i_riskApprove
+methodCode   = isTitanEntry ? "C" : str.substring(i_method, 0, 1)
+
+// ── All ta.* series are computed here, unconditionally, every bar. Pine keeps
+//    internal state for these; calling them inside an if-branch would corrupt
+//    that state, so nothing below re-derives them locally.
+atr     = ta.atr(14)
+volAvg  = ta.sma(volume, i_volLen)
+emaTr   = ta.ema(close, i_trailEMA)
+emaF    = ta.ema(close, i_emaFast)
+emaS    = ta.ema(close, i_emaSlow)
+ctxHi   = ta.highest(high, i_ctxLookback)
+ctxLo   = ta.lowest(low,  i_ctxLookback)
+pathHi  = ta.highest(high, 20)
+pathLo  = ta.lowest(low,  20)
+swingHi = ta.highest(high, i_trailSwing)
+swingLo = ta.lowest(low,  i_trailSwing)
+legVol  = ta.sma(volume, i_pivotLen * 2 + 1)[i_pivotLen]
+ph      = ta.pivothigh(high, i_pivotLen, i_pivotLen)
+pl      = ta.pivotlow(low,   i_pivotLen, i_pivotLen)
+
+pointVal = i_pointValue > 0 ? i_pointValue : syminfo.pointvalue
+tick     = syminfo.mintick
+
+// ───────────────────────────────────────────────────────────────────────────
+//  SCREEN 1 — HIGHER-TIMEFRAME BIAS (Ch IX)
+// ───────────────────────────────────────────────────────────────────────────
+//  Ch II Pillar 1 is explicit that structure is primary and moving averages
+//  are supplementary, so a bias needs EMA alignment AND price on the correct
+//  side of it. Either alone is not a trend.
+//
+//  The Python engine reads several trend screens and flags divergence between
+//  them (mtf.analyze); this build does the same with two, and adds the
+//  pattern screen's own read as the third input to that test.
+
+f_biasScore() =>
+    float f = ta.ema(close, i_emaFast)
+    float s = ta.ema(close, i_emaSlow)
+    int  sc = 0
+    if f > s and close > f
+        sc := 1
+    else if f < s and close < f
+        sc := -1
+    sc
+
+// Reading the *developing* higher-timeframe bar makes the plot repaint: the
+// history shows a value the live chart did not have at that moment. Taking the
+// previous, completed bar keeps history and live identical.
+htfRaw1  = request.security(syminfo.tickerid, i_trendTF, f_biasScore(),
+     lookahead = barmerge.lookahead_off)
+htfPrev1 = request.security(syminfo.tickerid, i_trendTF, f_biasScore()[1],
+     lookahead = barmerge.lookahead_off)
+htfRaw2  = request.security(syminfo.tickerid, i_trendTF2, f_biasScore(),
+     lookahead = barmerge.lookahead_off)
+htfPrev2 = request.security(syminfo.tickerid, i_trendTF2, f_biasScore()[1],
+     lookahead = barmerge.lookahead_off)
+
+bias1 = i_noRepaint ? htfPrev1 : htfRaw1
+bias2 = i_useTF2 ? (i_noRepaint ? htfPrev2 : htfRaw2) : bias1
+
+// Ch IX: "Higher TF trumps lower TF." When the two screens disagree, the
+// longer timeframe sets the bias and the disagreement is carried forward as
+// divergence — which costs the setup a Ch XI point and halves its size.
+tf1Sec   = timeframe.in_seconds(i_trendTF)
+tf2Sec   = timeframe.in_seconds(i_trendTF2)
+screensDisagree = i_useTF2 and bias1 != 0 and bias2 != 0 and bias1 != bias2
+htfBias  = screensDisagree and tf2Sec > tf1Sec ? bias2 : bias1
+htfBull  = htfBias ==  1
+htfBear  = htfBias == -1
+
+// Screen 2's own structural read. Ch IX: "Convergence = conviction."
+patBias  = emaF > emaS and close > emaF ? 1 : emaF < emaS and close < emaF ? -1 : 0
+patFights = htfBias != 0 and patBias != 0 and patBias != htfBias
+mtfConflict = screensDisagree or patFights
+mtfDetail = str.format("{0}={1} {2}={3} {4}={5}", i_trendTF,
+     bias1 > 0 ? "UP" : bias1 < 0 ? "DOWN" : "RANGE",
+     i_useTF2 ? i_trendTF2 : "—",
+     not i_useTF2 ? "—" : bias2 > 0 ? "UP" : bias2 < 0 ? "DOWN" : "RANGE",
+     timeframe.period, patBias > 0 ? "UP" : patBias < 0 ? "DOWN" : "RANGE")
+
+// ───────────────────────────────────────────────────────────────────────────
+//  SWING STRUCTURE — the skeleton every formation is built from
+// ───────────────────────────────────────────────────────────────────────────
+
+var array<float> pvPrice = array.new<float>()
+var array<int>   pvBar   = array.new<int>()
+var array<bool>  pvHigh  = array.new<bool>()
+var array<float> pvVol   = array.new<float>()
+
+// A longer pivot memory, kept only for the S/R clustering below. The formation
+// detector wants the recent skeleton; levels want the whole neighbourhood.
+var array<float> srPrice = array.new<float>()
+var array<bool>  srHigh  = array.new<bool>()
+
+var array<float> lvPrice = array.new<float>()
+var array<int>   lvTouch = array.new<int>()
+var array<bool>  lvIsRes = array.new<bool>()
+
+// Cluster the pivot memory into support/resistance levels, exactly as
+// core.structure.find_levels does: same kind, within tolerance, averaged, and
+// the touch count carried so the clean-path test can ignore one-touch noise.
+f_buildLevels() =>
+    array.clear(lvPrice)
+    array.clear(lvTouch)
+    array.clear(lvIsRes)
+    float tol = math.max(i_lvlTolATR * atr, tick * 4)
+    int srN = array.size(srPrice)
+    for k = 0 to 1
+        bool wantHigh = k == 0
+        array<float> grp = array.new<float>()
+        if srN > 0
+            for i = 0 to srN - 1
+                if array.get(srHigh, i) == wantHigh
+                    array.push(grp, array.get(srPrice, i))
+        int gN = array.size(grp)
+        if gN > 0
+            array.sort(grp, order.ascending)
+            float acc  = array.get(grp, 0)
+            float last = acc
+            int   cnt  = 1
+            if gN > 1
+                for i = 1 to gN - 1
+                    float p = array.get(grp, i)
+                    if p - last > tol
+                        array.push(lvPrice, acc / cnt)
+                        array.push(lvTouch, cnt)
+                        array.push(lvIsRes, wantHigh)
+                        acc := p
+                        cnt := 1
+                    else
+                        acc += p
+                        cnt += 1
+                    last := p
+            array.push(lvPrice, acc / cnt)
+            array.push(lvTouch, cnt)
+            array.push(lvIsRes, wantHigh)
+
+f_pushPivot(float p, int b, bool isHigh, float vol) =>
+    int n = array.size(pvHigh)
+    bool merged = false
+    // Collapse consecutive same-type pivots, keeping the more extreme.
+    if n > 0 and array.get(pvHigh, n - 1) == isHigh
+        float prev = array.get(pvPrice, n - 1)
+        bool better = isHigh ? p > prev : p < prev
+        if better
+            array.set(pvPrice, n - 1, p)
+            array.set(pvBar,   n - 1, b)
+            array.set(pvVol,   n - 1, vol)
+        merged := true
+    if not merged
+        array.push(pvPrice, p)
+        array.push(pvBar,   b)
+        array.push(pvHigh,  isHigh)
+        array.push(pvVol,   vol)
+        if array.size(pvPrice) > 12
+            array.shift(pvPrice)
+            array.shift(pvBar)
+            array.shift(pvHigh)
+            array.shift(pvVol)
+    array.push(srPrice, p)
+    array.push(srHigh,  isHigh)
+    if array.size(srPrice) > 60
+        array.shift(srPrice)
+        array.shift(srHigh)
+    f_buildLevels()
+
+if not na(ph)
+    f_pushPivot(ph, bar_index - i_pivotLen, true, legVol)
+if not na(pl)
+    f_pushPivot(pl, bar_index - i_pivotLen, false, legVol)
+
+// ── Level queries — the Ch XI S/R and clean-path factors, and the Ch X-B TP2
+
+// The first clustered level further along `dir` than `price`.
+f_nearestBeyond(float price, int dir, float minDist) =>
+    float best = na
+    int   n    = array.size(lvPrice)
+    if n > 0
+        for i = 0 to n - 1
+            float p = array.get(lvPrice, i)
+            if (p - price) * dir >= minDist
+                if na(best) or math.abs(p - price) < math.abs(best - price)
+                    best := p
+    best
+
+// Is there an independent level (i.e. not the broken neckline itself) sitting
+// on the entry or on the target?
+f_srConfluence(float entryPx, float target, float trigger, float tol) =>
+    bool found = false
+    int  n     = array.size(lvPrice)
+    if n > 0
+        for i = 0 to n - 1
+            float p = array.get(lvPrice, i)
+            if math.abs(p - trigger) > tol
+                if math.abs(p - entryPx) <= tol or math.abs(p - target) <= tol
+                    found := true
+    found
+
+// Opposing levels standing between the entry and TP1. A long is obstructed by
+// resistance overhead, a short by support below; levels sitting at the target
+// itself do not count, because the target is meant to be at structure.
+f_obstacles(float entryPx, float target, int dir, float tol) =>
+    int cnt = 0
+    float limit = entryPx + dir * math.abs(target - entryPx) * i_pathFrac
+    float lo = math.min(entryPx, limit)
+    float hi = math.max(entryPx, limit)
+    int   n  = array.size(lvPrice)
+    if n > 0
+        for i = 0 to n - 1
+            float p = array.get(lvPrice, i)
+            bool opposing = dir > 0 ? array.get(lvIsRes, i) : not array.get(lvIsRes, i)
+            if opposing and array.get(lvTouch, i) >= i_srTouches
+                if p > lo + tol and p < hi - tol
+                    cnt += 1
+    cnt
+
+// ───────────────────────────────────────────────────────────────────────────
+//  FORMATION MODEL
+// ───────────────────────────────────────────────────────────────────────────
+
+type Formation
+    string kind         = "none"   // H&S | InvH&S | DT | DB | TT | TB
+    bool   bearish      = false
+    float  neckAnchor   = 0.0      // neckline price at neckBar
+    float  neckSlope    = 0.0      // price per bar
+    int    neckBar      = 0
+    float  height       = 0.0      // measured-move height (Ch III-D / Ch IV-D)
+    float  invalidation = 0.0      // structural stop reference (Ch VII / Ch X-A)
+    float  apex         = 0.0      // the head, or the tested level
+    int    qualityPts   = 0        // Ch XI "Pattern Quality" factor, 0-2
+    int    prefPassed   = 0        // preferred filters met, for the checklist
+    int    prefTotal    = 5
+    int    startBar     = 0
+    int    endBar       = 0
+    bool   volumeOk     = false
+    bool   triple       = false
+    bool   priorOk      = false
+    float  patAtr       = 0.0
+    // The skeleton, kept so the formation can be drawn rather than described.
+    int    b1           = 0
+    float  x1           = 0.0
+    int    b2           = 0
+    float  x2           = 0.0
+    int    b3           = 0
+    float  x3           = 0.0
+
+method neckAt(Formation this, int b) =>
+    this.neckAnchor + this.neckSlope * (b - this.neckBar)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  QUALITY FILTERS (Ch III-E, Ch IV-C)
+// ───────────────────────────────────────────────────────────────────────────
+
+// MANDATORY: a clear established trend must precede the formation. Leg size
+// alone cannot separate a trend from one swing of a range, so the EMA
+// structure at the formation's start has to agree with the direction.
+f_priorTrendOk(int startBar, bool wantUp) =>
+    int off = bar_index - startBar
+    bool ok = false
+    if off >= 0 and off + i_priorBars < bar_index
+        float pStart = close[off + i_priorBars]
+        float pEnd   = close[off]
+        float leg    = math.abs(pEnd - pStart)
+        bool  dirOk  = wantUp ? pEnd > pStart : pEnd < pStart
+        bool  sizeOk = leg >= i_priorATR * atr[off]
+        bool  strOk  = wantUp ? emaF[off] > emaS[off] : emaF[off] < emaS[off]
+        ok := dirOk and sizeOk and strOk
+    ok
+
+// MANDATORY (Ch IV-C): the apex must cap the enclosing range. Measured at the
+// formation, not at the break — the break's own follow-through would extend
+// the range and make every good setup look like it formed mid-range.
+f_contextOk(int endBar, float apex, bool bearish) =>
+    int off = bar_index - endBar
+    bool ok = false
+    if off >= 0
+        float span = ctxHi[off] - ctxLo[off]
+        if span > 0
+            float dist = bearish ? (ctxHi[off] - apex) / span : (apex - ctxLo[off]) / span
+            ok := dist <= i_ctxTol
+    ok
+
+// Ch III-E PREFERRED filters map onto the Ch XI 0-2 "Pattern Quality" factor:
+// 0 = Ambiguous, 1 = Acceptable, 2 = Textbook.
+f_prefPassed(bool symH, bool symD, bool neckFlat, bool longEnough, bool volOk) =>
+    (symH ? 1 : 0) + (symD ? 1 : 0) + (neckFlat ? 1 : 0) +
+     (longEnough ? 1 : 0) + (volOk ? 1 : 0)
+
+f_qualityPoints(int passed) =>
+    float ratio = passed / 5.0
+    ratio >= 0.80 ? 2 : ratio >= 0.50 ? 1 : 0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  PATTERN DETECTION (Ch VI-A steps 1-2: SCAN + VALIDATE)
+// ───────────────────────────────────────────────────────────────────────────
+
+f_detect() =>
+    Formation f = Formation.new()
+    int n = array.size(pvPrice)
+
+    // ── Five-pivot window: H&S / Inverse H&S, or the Triple variant ────────
+    if n >= 5
+        float p1 = array.get(pvPrice, n - 5)
+        float t1 = array.get(pvPrice, n - 4)
+        float p2 = array.get(pvPrice, n - 3)
+        float t2 = array.get(pvPrice, n - 2)
+        float p3 = array.get(pvPrice, n - 1)
+        int   b1 = array.get(pvBar,   n - 5)
+        int   bt1= array.get(pvBar,   n - 4)
+        int   b2 = array.get(pvBar,   n - 3)
+        int   bt2= array.get(pvBar,   n - 2)
+        int   b3 = array.get(pvBar,   n - 1)
+        bool  firstIsHigh = array.get(pvHigh, n - 5)
+        float v1 = array.get(pvVol, n - 5)
+        float v2 = array.get(pvVol, n - 3)
+        float v3 = array.get(pvVol, n - 1)
+
+        int span = b3 - b1
+        if span >= 8 and span <= i_maxFormBars and bt2 > bt1
+            float slope   = (t2 - t1) / math.max(1, bt2 - bt1)
+            float angle   = math.todegrees(math.atan(slope / math.max(atr, tick)))
+            bool  flat    = math.abs(angle) <= i_neckAngle
+            float neckApex= t1 + slope * (b2 - bt1)
+            float h       = math.abs(p2 - neckApex)
+            // Ch XIV-B: a steep neckline distorts the measured move — use the
+            // head-to-neckline distance at the midpoint instead.
+            if not flat
+                int mid = int(math.round(math.avg(bt1, bt2)))
+                h := math.abs(p2 - (t1 + slope * (mid - bt1)))
+
+            if h > 0
+                bool  bearish = firstIsHigh
+                float outer   = bearish ? math.max(p1, p3) : math.min(p1, p3)
+                float prom    = math.abs(p2 - outer) / h
+                bool  headOut = bearish ? (p2 > p1 and p2 > p3) : (p2 < p1 and p2 < p3)
+                float spread  = math.max(math.max(p1, p2), p3) - math.min(math.min(p1, p2), p3)
+                bool  allLevel= spread <= i_levelTol * h
+
+                float sh1 = bearish ? p1 - (t1 + slope * (b1 - bt1)) : (t1 + slope * (b1 - bt1)) - p1
+                float sh3 = bearish ? p3 - (t1 + slope * (b3 - bt1)) : (t1 + slope * (b3 - bt1)) - p3
+                bool  geomOk = sh1 > 0 and sh3 > 0
+                float symH   = math.abs(sh1 - sh3) / math.max(math.max(sh1, sh3), tick)
+                int   d1     = math.max(1, b2 - b1)
+                int   d2     = math.max(1, b3 - b2)
+                float symD   = math.abs(d1 - d2) / math.max(d1, d2)
+                bool  volOk  = v1 > v2 and v2 > v3
+                bool  trendOk= f_priorTrendOk(b1, bearish)
+
+                // ── Head & Shoulders (Ch III) ──────────────────────────────
+                if headOut and prom >= i_headProm and geomOk and trendOk and
+                   f_contextOk(b3, p2, bearish) and (not i_volDecline or volOk)
+                    int passed = f_prefPassed(symH <= i_symTol, symD <= i_symTol, flat,
+                         span >= i_minFormBars, volOk)
+                    f.kind         := bearish ? "H&S" : "InvH&S"
+                    f.bearish      := bearish
+                    f.neckAnchor   := t1 + slope * (b3 - bt1)
+                    f.neckSlope    := slope
+                    f.neckBar      := b3
+                    f.height       := h
+                    f.invalidation := p3
+                    f.apex         := p2
+                    f.prefPassed   := passed
+                    f.qualityPts   := f_qualityPoints(passed)
+                    f.startBar     := b1
+                    f.endBar       := b3
+                    f.volumeOk     := volOk
+                    f.priorOk      := trendOk
+                    f.patAtr       := atr
+                    f.b1 := b1
+                    f.x1 := p1
+                    f.b2 := b2
+                    f.x2 := p2
+                    f.b3 := b3
+                    f.x3 := p3
+
+                // ── Triple Top / Bottom (Ch IV-D, +1 confluence) ───────────
+                else if allLevel and geomOk and trendOk
+                    float conf  = bearish ? math.min(t1, t2) : math.max(t1, t2)
+                    float lvl   = (p1 + p2 + p3) / 3.0
+                    float hh    = math.abs(lvl - conf)
+                    float ext   = bearish ? math.max(math.max(p1, p2), p3)
+                                          : math.min(math.min(p1, p2), p3)
+                    if hh >= atr and f_contextOk(b3, ext, bearish) and
+                       (not i_volDecline or volOk)
+                        int passed3 = f_prefPassed(true, true, true,
+                             span >= i_minFormBars, volOk)
+                        f.kind         := bearish ? "TT" : "TB"
+                        f.bearish      := bearish
+                        f.neckAnchor   := conf
+                        f.neckSlope    := 0.0
+                        f.neckBar      := b3
+                        f.height       := hh
+                        f.invalidation := ext
+                        f.apex         := lvl
+                        f.prefPassed   := passed3
+                        f.qualityPts   := f_qualityPoints(passed3)
+                        f.startBar     := b1
+                        f.endBar       := b3
+                        f.volumeOk     := volOk
+                        f.priorOk      := trendOk
+                        f.triple       := true
+                        f.patAtr       := atr
+                        f.b1 := b1
+                        f.x1 := p1
+                        f.b2 := b2
+                        f.x2 := p2
+                        f.b3 := b3
+                        f.x3 := p3
+
+    // ── Three-pivot window: Double Top / Double Bottom (Ch IV) ─────────────
+    if f.kind == "none" and n >= 3
+        float q1 = array.get(pvPrice, n - 3)
+        float c1 = array.get(pvPrice, n - 2)
+        float q2 = array.get(pvPrice, n - 1)
+        int   a1 = array.get(pvBar,   n - 3)
+        int   ac = array.get(pvBar,   n - 2)
+        int   a2 = array.get(pvBar,   n - 1)
+        bool  isHigh = array.get(pvHigh, n - 3)
+        float w1 = array.get(pvVol, n - 3)
+        float w2 = array.get(pvVol, n - 1)
+
+        int span2 = a2 - a1
+        if span2 >= 6 and span2 <= i_maxFormBars
+            float lvl  = (q1 + q2) / 2.0
+            float hh   = math.abs(lvl - c1)
+            float gap  = math.abs(q1 - q2)
+            // Ch IV-C level proximity, bounded both ways.
+            bool  near = hh > 0 and gap <= i_levelTol * hh and
+                         gap / math.max(math.abs(lvl), tick) <= 0.03
+            // Ch IV-C: the pullback between tests must be a real structural
+            // move — "No pullback = consolidation."
+            bool  pullOk = hh >= atr
+            float apex2  = isHigh ? math.max(q1, q2) : math.min(q1, q2)
+            bool  volOk2 = w1 > w2
+            bool  trend2 = f_priorTrendOk(a1, isHigh)
+
+            if near and pullOk and trend2 and
+               f_contextOk(a2, apex2, isHigh) and (not i_volDecline or volOk2)
+                int passed2 = f_prefPassed(true, true, true, span2 >= i_minFormBars, volOk2)
+                f.kind         := isHigh ? "DT" : "DB"
+                f.bearish      := isHigh
+                f.neckAnchor   := c1
+                f.neckSlope    := 0.0
+                f.neckBar      := a2
+                f.height       := hh
+                f.invalidation := apex2
+                f.apex         := apex2
+                f.prefPassed   := passed2
+                f.qualityPts   := f_qualityPoints(passed2)
+                f.startBar     := a1
+                f.endBar       := a2
+                f.volumeOk     := volOk2
+                f.priorOk      := trend2
+                f.patAtr       := atr
+                f.b1 := a1
+                f.x1 := q1
+                f.b2 := ac
+                f.x2 := c1
+                f.b3 := a2
+                f.x3 := q2
+    f
+
+detected = f_detect()
+
+// ───────────────────────────────────────────────────────────────────────────
+//  BREAKOUT STATE MACHINE (Ch V)
+//    armed -> broken -> retested -> ready
+//  Method A fires at 'broken', B at 'retested', C at 'ready' (Ch VII).
+//  Nothing signals before a confirming close: Ch XII-A1 bans anticipation.
+// ───────────────────────────────────────────────────────────────────────────
+
+var Formation act        = Formation.new()
+var string    state      = "none"
+var int       stAge      = 0     // bars since the state last advanced
+var int       armAge     = 0     // bars armed without a break
+var float     brkLevel   = 0.0   // key level at the moment of the break
+var bool      brkSurge   = false
+var float     brkVolRatio= 0.0
+var float     retestWick = 0.0
+var string    retestKind = ""
+var line      neckLine   = na
+var line      skel1      = na
+var line      skel2      = na
+var int       deadCount  = 0     // Ch XII-A4: skipped setups are counted too
+
+// Register a formation only while nothing is live. Ch VI-B treats overlapping
+// reads of the same price action as ONE setup, so a formation already past its
+// break is never displaced.
+if detected.kind != "none" and barstate.isconfirmed
+    bool fresh = state == "none"
+    bool upgrade = state == "armed" and detected.endBar > act.endBar and
+                   detected.qualityPts >= act.qualityPts
+    if (fresh or upgrade) and detected.endBar != act.endBar
+        act    := detected
+        state  := "armed"
+        armAge := 0
+        stAge  := 0
+        if i_showNeck
+            neckLine := line.new(act.startBar, act.neckAt(act.startBar),
+                 bar_index, act.neckAt(bar_index), xloc = xloc.bar_index,
+                 extend = extend.right, style = line.style_dashed, width = 2,
+                 color = act.bearish ? color.new(color.red, 30) : color.new(color.teal, 30))
+        if i_showPattern
+            color skelCol = act.bearish ? color.new(color.red, 45) : color.new(color.teal, 45)
+            skel1 := line.new(act.b1, act.x1, act.b2, act.x2, xloc = xloc.bar_index,
+                 color = skelCol, width = 1)
+            skel2 := line.new(act.b2, act.x2, act.b3, act.x3, xloc = xloc.bar_index,
+                 color = skelCol, width = 1)
+        if i_showLabels
+            label.new(act.endBar, act.apex,
+                 str.format("{0}  q{1}/2  ({2}/5 preferred)", act.kind, act.qualityPts,
+                      act.prefPassed),
+                 style = act.bearish ? label.style_label_down : label.style_label_up,
+                 color = color.new(color.gray, 25), textcolor = color.white, size = size.tiny)
+
+if not na(neckLine) and state != "none"
+    line.set_xy2(neckLine, bar_index, act.neckAt(bar_index))
+
+float neckNow  = state == "none" ? na : act.neckAt(bar_index)
+float closeBuf = i_closeBuf * atr
+// The flip-failure buffer must exceed the retest zone: price inside the zone
+// is retesting, not invalidating.
+float invalBuf = math.max(i_invalBuf, i_retestTol * 1.2) * atr
+
+// Ch V-A criterion 1 (REQUIRED): a break is a CLOSE beyond the key level.
+brokeNow = state == "armed" and not na(neckNow) and
+           (act.bearish ? close < neckNow - closeBuf : close > neckNow + closeBuf)
+volRatio = volAvg > 0 ? volume / volAvg : 0.0
+volSurge = volRatio >= i_volSurge
+// Ch V-B: "Wick-only penetration [...] No close = no trade."
+wickOnly = state == "armed" and not na(neckNow) and not brokeNow and
+           (act.bearish ? (low < neckNow and close >= neckNow)
+                         : (high > neckNow and close <= neckNow))
+
+// Rejection candles the Ch VII Method B entry keys off: pin bar, engulfing, or
+// a strong wick rejection. The kind is kept for the journal line.
+body   = math.abs(close - open)
+rng    = math.max(high - low, tick)
+upWick = high - math.max(open, close)
+dnWick = math.min(open, close) - low
+pinBear  = upWick >= 2 * body and body <= 0.35 * rng and upWick > dnWick
+engBear  = close < open and close[1] > open[1] and
+           body >= math.abs(close[1] - open[1]) and close < open[1]
+wickBear = upWick / rng >= 0.5 and upWick > dnWick
+pinBull  = dnWick >= 2 * body and body <= 0.35 * rng and dnWick > upWick
+engBull  = close > open and close[1] < open[1] and
+           body >= math.abs(close[1] - open[1]) and close > open[1]
+wickBull = dnWick / rng >= 0.5 and dnWick > upWick
+rejectBear = pinBear or engBear or wickBear
+rejectBull = pinBull or engBull or wickBull
+rejKindBear = pinBear ? "pin_bar" : engBear ? "engulfing" : "strong_wick"
+rejKindBull = pinBull ? "pin_bar" : engBull ? "engulfing" : "strong_wick"
+
+var string deadReason = ""
+bool justDied = false
+
+if barstate.isconfirmed and state != "none"
+    stAge += 1
+    if state == "armed"
+        armAge += 1
+        if brokeNow and (not i_rejectLowVol or volSurge)
+            state       := "broken"
+            stAge       := 0
+            brkLevel    := neckNow
+            brkSurge    := volSurge
+            brkVolRatio := volRatio
+        else if armAge > i_expiryBars
+            state      := "none"
+            deadReason := "formation expired unbroken (Ch VI-B)"
+            justDied   := true
+    else
+        bool flipFailed = act.bearish ? close > neckNow + invalBuf : close < neckNow - invalBuf
+        bool structGone = act.bearish ? close > act.invalidation   : close < act.invalidation
+        if flipFailed or structGone
+            state      := "none"
+            deadReason := flipFailed ? "failed break — level reclaimed (Ch V-C)"
+                                     : "structural invalidation breached (Ch X-A)"
+            justDied   := true
+        else if state == "broken"
+            bool touched = act.bearish ? high >= neckNow - i_retestTol * atr
+                                       : low  <= neckNow + i_retestTol * atr
+            if touched and (act.bearish ? rejectBear : rejectBull)
+                state      := "retested"
+                stAge      := 0
+                retestWick := act.bearish ? high : low
+                retestKind := act.bearish ? rejKindBear : rejKindBull
+            else if stAge > i_retestBars
+                state      := "none"
+                deadReason := "retest window elapsed (Ch V-C)"
+                justDied   := true
+        else if state == "retested"
+            // Ch VII Method C: a follow-through close beyond the rejection bar.
+            bool follow = act.bearish ? (close < open and close < low[1])
+                                      : (close > open and close > high[1])
+            if follow
+                state := "ready"
+                stAge := 0
+            else if stAge > i_retestBars
+                state      := "none"
+                deadReason := "no follow-through after the retest (Ch VII Method C)"
+                justDied   := true
+
+if justDied
+    deadCount += 1
+    if not na(neckLine)
+        line.set_extend(neckLine, extend.none)
+        line.set_style(neckLine, line.style_dotted)
+        neckLine := na
+
+// ───────────────────────────────────────────────────────────────────────────
+//  LEVELS — Ch VII stops, Ch III-D / Ch IV-D targets, Ch X-B ladder
+// ───────────────────────────────────────────────────────────────────────────
+
+dirSign = state == "none" ? 0 : (act.bearish ? -1 : 1)
+// Ch VII: every method fills on a close — Method A on the break candle,
+// B on the rejection candle, C on the follow-through candle.
+entryPx = close
+
+// Method A stops beyond the formation's own invalidation; B and C sit just
+// beyond the retest wick, which is exactly where the structural flip fails.
+useStructStop = methodCode == "A" or state == "broken"
+rawStop = useStructStop ? act.invalidation + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
+                        : retestWick       + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
+
+stopFloor = math.max(math.max(i_minStopATR * atr, i_minStopPat * act.patAtr), 4 * tick)
+float stopPx  = rawStop
+bool  widened = false
+if state != "none" and math.abs(entryPx - rawStop) < stopFloor
+    stopPx  := entryPx - dirSign * stopFloor
+    widened := true
+// A stop on the wrong side of the entry is not a stop.
+badStop = state != "none" and (dirSign > 0 ? stopPx >= entryPx : stopPx <= entryPx)
+
+stopDist = math.abs(entryPx - stopPx)
+
+// Ch III-D / Ch IV-D: the measured move is anchored to the BREAK price.
+tp1 = brkLevel + dirSign * act.height
+
+// Ch X-B TP2 — "the next significant S/R beyond TP1", with the R-multiple only
+// as a fallback when the level map has nothing out there.
+float srBeyond = state == "none" ? float(na) : f_nearestBeyond(tp1, dirSign, 0.5 * atr)
+float tp2 = na(srBeyond) ? entryPx + dirSign * i_tp2R * stopDist : srBeyond
+if state != "none" and (tp2 - tp1) * dirSign <= 0
+    tp2 := entryPx + dirSign * math.max(i_tp2R * stopDist,
+         math.abs(tp1 - entryPx) + atr)
+tp2FromSR = not na(srBeyond) and (srBeyond - tp1) * dirSign > 0
+
+// TP3 — the trailed runner. The projection is a reporting aid only.
+float tp3 = brkLevel + dirSign * 2.0 * act.height
+if state != "none" and (tp3 - tp2) * dirSign <= 0
+    tp3 := tp2 + dirSign * atr
+
+rr = stopDist > 0 ? math.abs(tp1 - entryPx) / stopDist : 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  CONFLUENCE SCORING (Ch XI) — mandatory, out of 10
+// ───────────────────────────────────────────────────────────────────────────
+
+scPattern  = state == "none" ? 0 : act.qualityPts                    // 0-2
+// 0 = wick only, 1 = candle close, 2 = close on a volume surge.
+scBreakout = state == "none" or state == "armed" ? 0 : brkSurge ? 2 : 1
+scRetest   = (state == "retested" or state == "ready") ? 1 : 0       // 0-1
+htfAligned = state == "none" ? false : (act.bearish ? htfBear : htfBull)
+scHTF      = state == "none" ? 0 :
+             htfBias == 0    ? 1 :
+             not htfAligned  ? 0 :
+             mtfConflict     ? 1 : 2                                 // 0-2
+srHit      = state != "none" and f_srConfluence(entryPx, tp1, brkLevel, i_srTol * atr)
+scSR       = srHit ? 1 : 0                                           // 0-1
+scRR       = rr >= i_minRR ? 1 : 0                                   // 0-1, 0 = auto-skip
+obstacles  = state == "none" ? 0 : f_obstacles(entryPx, tp1, dirSign, i_srTol * atr)
+// The level map is the primary test; the raw 20-bar path is a backstop for the
+// early bars, before enough pivots exist to cluster.
+pathRaw    = state != "none" and (act.bearish ? pathLo > tp1 : pathHi < tp1)
+scPath     = obstacles == 0 and (array.size(lvPrice) > 0 or pathRaw) ? 1 : 0
+scTriple   = state != "none" and act.triple ? 1 : 0                  // Ch IV-D bonus
+
+score = math.min(10, scPattern + scBreakout + scRetest + scHTF + scSR + scRR +
+     scPath + scTriple)
+grade = state == "none"        ? "—"         :
+         scRR == 0              ? "DISCARD"   :
+         score >= i_eliteScore  ? "ELITE"     :
+         score >= i_minScore    ? "APPROVED"  :
+         score >= i_watchScore  ? "WATCHLIST" : "DISCARD"
+tradeable = grade == "ELITE" or grade == "APPROVED"
+
+// ───────────────────────────────────────────────────────────────────────────
+//  PAPER LEDGER — the account the Ch VIII-A limits are measured against
+// ───────────────────────────────────────────────────────────────────────────
+//  An indicator has no equity of its own, so one is kept here: the account
+//  input, moved by the paper position's realised P&L. It exists to make the
+//  daily and weekly loss limits and the RMG s.05 size cap enforceable on the
+//  chart. It is NOT a backtest — use the strategy build for Ch XIII-B numbers.
+
+var float  peBal   = i_account   // realised balance
+var int    vDir    = 0           // +1 long, -1 short, 0 flat
+var float  vEntry  = 0.0
+var float  vR      = 0.0         // 1R in price
+var float  vTp1    = 0.0
+var float  vTp2    = 0.0
+var float  vTp3    = 0.0
+var float  vQty    = 0.0         // original size
+var float  vLeft   = 0.0         // size still open
+var float  vStop   = 0.0         // the live stop, after BE and trailing
+var int    vBar    = 0
+var bool   vBeDone = false
+var bool   vTp1Hit = false
+var string vKind   = ""
+var int    vScore  = 0
+var string vGrade  = ""
+var float  vRiskPct= 0.0
+var int    nTrades = 0
+var int    nWins   = 0
+var float  grossWin  = 0.0
+var float  grossLoss = 0.0
+var float  vRealised = 0.0       // realised P&L of the CURRENT trade
+
+openPnl  = vDir != 0 ? vDir * (close - vEntry) * vLeft * pointVal : 0.0
+equityNow = peBal + openPnl
+
+var float dayStartEq  = na
+var float weekStartEq = na
+if na(dayStartEq)
+    dayStartEq := equityNow
+if na(weekStartEq)
+    weekStartEq := equityNow
+if timeframe.change("D")
+    dayStartEq := equityNow
+if timeframe.change("W")
+    weekStartEq := equityNow
+
+dailyDD  = dayStartEq  > 0 ? math.max(0, (dayStartEq  - equityNow) / dayStartEq  * 100) : 0.0
+weeklyDD = weekStartEq > 0 ? math.max(0, (weekStartEq - equityNow) / weekStartEq * 100) : 0.0
+
+dailyHalt  = dailyDD  >= i_dailyLoss
+weeklyHalt = weeklyDD >= i_weeklyLoss
+// RMG s.05: the 2-3% daily band enforces a position size cap.
+ddFactor   = dailyDD >= i_ddRestrict ? i_restrictMul : 1.0
+// Ch IX: "Conflicting screens = reduce size or wait."
+sizeFactor = ddFactor * (mtfConflict ? i_conflictMul : 1.0)
+
+inSession    = not na(time(timeframe.period, i_tradeSess))
+inBlackout   = i_useBlackout and not na(time(timeframe.period, i_blackout))
+counterTrend = state != "none" and (act.bearish ? htfBull : htfBear)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  POSITION SIZING (Ch VIII-A)
+// ───────────────────────────────────────────────────────────────────────────
+
+riskPct = (grade == "ELITE" ? riskElite : riskApproved) * sizeFactor
+riskAmt = equityNow * riskPct / 100.0
+qty     = stopDist > 0 and pointVal > 0 ? math.max(0.0, riskAmt / (stopDist * pointVal)) : 0.0
+// Ch VIII-A aggregate cap. Pine sees one symbol, so this only knows about the
+// paper position on THIS chart — the checklist says so rather than implying
+// portfolio-wide coverage.
+openRiskPct = vDir != 0 and equityNow > 0
+     ? math.max(0.0, vDir * (vEntry - vStop)) * vLeft * pointVal / equityNow * 100.0 : 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  TRADE MANAGEMENT (Ch X) — applied to the paper position
+// ───────────────────────────────────────────────────────────────────────────
+
+// Trail candidates are computed unconditionally at global scope; only the
+// choice between them is made here.
+trailPx = i_trailMode == "EMA" ? emaTr - vDir * i_trailBuf * atr
+                               : (vDir > 0 ? swingLo - i_trailBuf * atr
+                                           : swingHi + i_trailBuf * atr)
+
+
+// Pine forbids a function from assigning to a global, and the ledger is all
+// globals, so the partial-close arithmetic is written out inline below rather
+// than wrapped in a helper.
+
+var string exitReason = ""
+bool tradeClosed = false
+float barPnl = 0.0
+
+if i_paper and vDir != 0 and barstate.isconfirmed
+    // Ch X-A: breakeven at 1R — and, per RMG s.03, never before it.
+    float rNow = vR > 0 ? vDir * (close - vEntry) / vR : 0.0
+    if not vBeDone and rNow >= i_beAtR
+        float be = vEntry + vDir * i_beOffset * vR
+        vStop   := vDir > 0 ? math.max(vStop, be) : math.min(vStop, be)
+        vBeDone := true
+    // Ch X-A: after 1.5R trail on the most recent swing or the 20-EMA.
+    // Ch XIV-A5: the stop only ever moves in your favour.
+    if rNow >= i_trailAtR
+        vStop := vDir > 0 ? math.max(vStop, trailPx) : math.min(vStop, trailPx)
+
+    // The intrabar sequence is unknowable from a bar, so the stop is assumed
+    // to have come first. That is the conservative reading, and it is the one
+    // the Python backtester takes too.
+    bool stopHit = vDir > 0 ? low <= vStop : high >= vStop
+    if stopHit
+        barPnl      += vDir * (vStop - vEntry) * vLeft * pointVal - i_commission * vLeft
+        vLeft       := 0.0
+        exitReason  := vBeDone ? "trailed / breakeven stop (Ch X-A)" : "initial stop (Ch X-A)"
+        tradeClosed := true
+    else
+        // Ch X-B ladder: TP1 50% at the measured move, TP2 30% at the next
+        // significant S/R, TP3 the trailed runner.
+        if not vTp1Hit and (vDir > 0 ? high >= vTp1 : low <= vTp1)
+            float part1 = math.min(vQty * i_tp1Pct / 100.0, vLeft)
+            barPnl  += vDir * (vTp1 - vEntry) * part1 * pointVal - i_commission * part1
+            vLeft   := vLeft - part1
+            vTp1Hit := true
+            // Ch X-B: TP1 filled moves the stop to breakeven immediately.
+            float be1 = vEntry + vDir * i_beOffset * vR
+            vStop   := vDir > 0 ? math.max(vStop, be1) : math.min(vStop, be1)
+            vBeDone := true
+        if vLeft > 0 and (vDir > 0 ? high >= vTp2 : low <= vTp2)
+            float part2 = math.min(vQty * i_tp2Pct / 100.0, vLeft)
+            barPnl += vDir * (vTp2 - vEntry) * part2 * pointVal - i_commission * part2
+            vLeft  := vLeft - part2
+        if vLeft > 0 and (vDir > 0 ? high >= vTp3 : low <= vTp3)
+            barPnl      += vDir * (vTp3 - vEntry) * vLeft * pointVal - i_commission * vLeft
+            vLeft       := 0.0
+            exitReason  := "TP3 — twice the measured move (Ch X-B)"
+            tradeClosed := true
+
+    // ── Ch X-C early exit triggers ─────────────────────────────────────────
+    if not tradeClosed and vLeft > 0
+        bool reclaimed = i_exitInval and not na(neckNow) and
+             (vDir > 0 ? close < neckNow - invalBuf : close > neckNow + invalBuf)
+        // A counter-pattern is one pointing the other way that has actually
+        // broken — not one merely sitting on the watchlist.
+        bool counterPat = i_exitCounter and not vTp1Hit and state != "none" and
+             act.bearish == (vDir > 0) and
+             (state == "broken" or state == "retested" or state == "ready")
+        bool stale   = not vTp1Hit and (bar_index - vBar) >= i_maxBars
+        bool newsOut = inBlackout and not vBeDone
+        if reclaimed or counterPat or stale or newsOut
+            barPnl      += vDir * (close - vEntry) * vLeft * pointVal - i_commission * vLeft
+            vLeft       := 0.0
+            exitReason  := reclaimed ? "Ch X-C invalidation" :
+                 counterPat ? "Ch X-C counter-pattern" :
+                 stale ? "Ch X-C duration" : "Ch XII-A6 news blackout"
+            tradeClosed := true
+
+    peBal     := peBal + barPnl
+    vRealised := vRealised + barPnl
+    if vLeft <= 0
+        tradeClosed := true
+
+if tradeClosed and vDir != 0
+    nTrades += 1
+    if vRealised > 0
+        nWins    += 1
+        grossWin += vRealised
+    else
+        grossLoss -= vRealised
+    // Ch XIII-A wants the closed trade logged with the fields it was opened on,
+    // so the grade, score and risk it was taken at ride along with the result.
+    alert(str.format(
+         '{{"strategy":"TFBS","action":"PAPER_EXIT","symbol":"{0}","pattern":"{1}",' +
+         '"grade":"{2}","score":{3},"risk_pct":{4},"reason":"{5}","pnl":{6},' +
+         '"balance":{7},"bars_held":{8}}}',
+         syminfo.ticker, vKind, vGrade, vScore, math.round(vRiskPct, 2), exitReason,
+         math.round(vRealised, 2), math.round(peBal, 2), bar_index - vBar),
+         alert.freq_once_per_bar)
+    if i_showLabels
+        label.new(bar_index, vDir > 0 ? high : low,
+             str.format("EXIT {0}\n{1}", math.round(vRealised, 2), exitReason),
+             style = vDir > 0 ? label.style_label_down : label.style_label_up,
+             color = vRealised >= 0 ? color.new(color.green, 30) : color.new(color.red, 30),
+             textcolor = color.white, size = size.tiny)
+    vDir      := 0
+    vLeft     := 0.0
+    vStop     := 0.0
+    vRealised := 0.0
+
+// ───────────────────────────────────────────────────────────────────────────
+//  APPENDIX A — THE PRE-TRADE CHECKLIST
+// ───────────────────────────────────────────────────────────────────────────
+//  Sixteen items in five sections, mandatory ones marked. The Python engine
+//  blocks a trade on any mandatory failure (strategy.checklist.build_checklist)
+//  and so does the signal gate below.
+
+haveSetup   = state != "none"
+readyState  = methodCode == "A" ? "broken" : methodCode == "B" ? "retested" : "ready"
+methodNeedsRetest = methodCode != "A"
+stopStructural = not haveSetup ? false :
+     dirSign > 0 ? (stopPx <= act.invalidation or (retestWick > 0 and stopPx <= retestWick))
+                 : (stopPx >= act.invalidation or (retestWick > 0 and stopPx >= retestWick))
+maxRiskPct  = isTitanEntry ? 0.5 : math.max(i_riskElite, i_riskApprove)
+
+// PATTERN IDENTIFICATION
+ck01 = haveSetup                                        // formation clearly visible
+ck02 = haveSetup and act.priorOk                        // established prior trend
+ck03 = haveSetup and act.qualityPts >= 1                // quality filters pass
+// BREAKOUT CONFIRMATION
+ck04 = haveSetup and state != "armed"                   // broken by a CANDLE CLOSE
+ck05 = brkSurge                                         // preferred: volume > 1.5x
+ck06 = not methodNeedsRetest or scRetest == 1           // retest for Method B/C
+// RISK & REWARD
+ck07 = stopStructural and not badStop                   // stop at invalidation
+ck08 = riskPct > 0 and riskPct <= maxRiskPct + 0.0001   // 1-2% (0.5% Titan Entry)
+ck09 = rr >= i_minRR                                    // 2:1 minimum
+ck10 = scPath == 1                                      // preferred: clear path
+// TIMEFRAME ALIGNMENT
+ck11 = haveSetup and not counterTrend                   // Screen 1 aligned
+ck12 = haveSetup and state != "armed"                   // Screen 2 confirmed formation
+ck13 = true                                             // Screen 3 folded into Screen 2
+// FINAL AUTHORIZATION
+ck14 = score >= i_minScore                              // 7/10 or higher
+ck15 = not inBlackout                                   // no high-impact news
+ck16 = openRiskPct + riskPct <= i_aggRisk + 0.0001      // aggregate risk under 5%
+ck17 = i_journal                                        // journalled with a screenshot
+
+// Every mandatory item. ck05 and ck10 are PREFERRED and do not block.
+checklistOk = ck01 and ck02 and ck03 and ck04 and ck06 and ck07 and ck08 and
+              ck09 and ck11 and ck12 and ck13 and ck14 and ck15 and ck16 and
+              (not i_reqJournal or ck17)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  SIGNAL (Ch VI-A step 6) — the indicator's equivalent of an order
+// ───────────────────────────────────────────────────────────────────────────
+
+sizeOk   = stopDist > 0 and stopDist <= i_maxStopATR * atr and qty > 0 and not badStop
+riskOk   = not weeklyHalt and not dailyHalt and inSession and not inBlackout
+trendOk  = not (i_blockCounter and counterTrend)
+signalNow = barstate.isconfirmed and vDir == 0 and haveSetup and state == readyState and
+     stAge == 0 and tradeable and score >= i_minScore and rr >= i_minRR and
+     sizeOk and riskOk and trendOk and checklistOk
+
+// Ch XII-A4: a setup that reached the trigger and was refused is journalled
+// too, so the reason is carried rather than dropped.
+blockReason = not (barstate.isconfirmed and haveSetup and state == readyState and stAge == 0)
+     ? "" :
+     vDir != 0            ? "a paper position is already open on this symbol" :
+     scRR == 0            ? str.format("R:R {0}:1 is below the firm minimum of {1}:1 (Ch VIII-A)",
+                                 math.round(rr, 2), i_minRR) :
+     not tradeable        ? str.format("confluence {0}/10 -> {1}; the firm approves {2}/10+ (Ch XI)",
+                                 score, grade, i_minScore) :
+     not trendOk          ? "counter-trend to the higher-timeframe bias (Ch IX / Appendix A)" :
+     badStop              ? "stop resolved to the wrong side of the entry price" :
+     stopDist > i_maxStopATR * atr ? "stop wider than the ATR ceiling — the measured move " +
+                                 "cannot pay 2R" :
+     qty <= 0             ? "position size rounds to zero — check the point value override" :
+     weeklyHalt           ? "weekly loss limit reached — mandatory cessation (Ch VIII-A)" :
+     dailyHalt            ? "daily loss limit reached — cease trading for the day (Ch VIII-A)" :
+     inBlackout           ? "inside the news blackout window (Ch XII-A6)" :
+     not inSession        ? "outside the permitted trading session" :
+     not checklistOk      ? "Appendix A checklist has a mandatory failure" : ""
+
+alertEntry = str.format(
+     '{{"firm":"Titan Markets LLC","strategy":"TFBS","symbol":"{0}","tf":"{1}",' +
+     '"action":"{2}","pattern":"{3}","grade":"{4}","score":{5},"method":"{6}",' +
+     '"entry":{7},"sl":{8},"tp1":{9},"tp2":{10},"tp3":{11},"rr":{12},"risk_pct":{13},' +
+     '"qty":{14},"retest":"{15}","vol_x":{16}}}',
+     syminfo.ticker, timeframe.period, dirSign > 0 ? "BUY" : "SELL", act.kind, grade,
+     score, methodCode, entryPx, stopPx, tp1, tp2, tp3,
+     math.round(rr, 2), math.round(riskPct, 2), qty,
+     retestKind == "" ? "none" : retestKind, math.round(brkVolRatio, 2))
+
+if signalNow
+    vDir     := dirSign
+    vEntry   := entryPx
+    vStop    := stopPx
+    vR       := stopDist
+    vTp1     := tp1
+    vTp2     := tp2
+    vTp3     := tp3
+    vQty     := qty
+    vLeft    := i_paper ? qty : 0.0
+    vBar     := bar_index
+    vBeDone  := false
+    vTp1Hit  := false
+    vKind    := act.kind
+    vScore   := score
+    vGrade   := grade
+    vRiskPct := riskPct
+    vRealised := 0.0
+    if i_paper
+        peBal := peBal - i_commission * qty
+    else
+        // No ledger, no position to manage — the signal is the whole output.
+        vDir := 0
+    alert(alertEntry, alert.freq_once_per_bar)
+    if i_showLabels
+        label.new(bar_index, dirSign > 0 ? low : high,
+             str.format("{0} {1} · {2}\n{3}/10 · {4}R · {5}% · {6}",
+                  grade, act.kind, dirSign > 0 ? "LONG" : "SHORT", score,
+                  math.round(rr, 1), math.round(riskPct, 2), methodCode),
+             style = dirSign > 0 ? label.style_label_up : label.style_label_down,
+             color = grade == "ELITE" ? color.new(color.orange, 10) : color.new(color.blue, 20),
+             textcolor = color.white, size = size.small)
+
+if barstate.isconfirmed and blockReason != "" and not signalNow
+    alert(str.format("TFBS {0} SKIPPED {1} on {2} — {3}", syminfo.ticker, act.kind,
+         timeframe.period, blockReason), alert.freq_once_per_bar)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  VISUALS
+// ───────────────────────────────────────────────────────────────────────────
+
+live      = vDir != 0
+showProj  = i_showLevels and haveSetup and not live and state != "armed"
+
+plot(i_showLevels and live ? vEntry : na, "Entry", color.new(color.blue, 0), 1, plot.style_linebr)
+plot(i_showLevels and live ? vStop  : na, "Stop",  color.new(color.red, 0),  2, plot.style_linebr)
+plot(i_showLevels and live ? vTp1   : na, "TP1",   color.new(color.green, 0),  1, plot.style_linebr)
+plot(i_showLevels and live ? vTp2   : na, "TP2",   color.new(color.green, 40), 1, plot.style_linebr)
+plot(i_showLevels and live ? vTp3   : na, "TP3",   color.new(color.green, 70), 1, plot.style_linebr)
+
+// The same ladder, projected for a setup that has confirmed but not signalled
+// — the Ch VI-B watchlist view.
+plot(showProj ? stopPx : na, "Projected stop", color.new(color.red, 60), 1, plot.style_circles)
+plot(showProj ? tp1    : na, "Projected TP1",  color.new(color.green, 60), 1, plot.style_circles)
+
+// location.absolute needs a price series; this is a boolean flag, so it hangs
+// off the bar instead.
+plotshape(i_showWick and wickOnly, "Wick-only penetration (Ch V-B)",
+     shape.xcross, location.abovebar, color.new(color.orange, 0), size = size.tiny)
+plotshape(signalNow and dirSign > 0, "TFBS long signal", shape.triangleup,
+     location.belowbar, color.new(color.green, 0), size = size.small)
+plotshape(signalNow and dirSign < 0, "TFBS short signal", shape.triangledown,
+     location.abovebar, color.new(color.red, 0), size = size.small)
+
+bgcolor(i_useBlackout and inBlackout ? color.new(color.red, 92) : na, title = "News blackout")
+bgcolor(dailyHalt or weeklyHalt ? color.new(color.maroon, 88) : na, title = "Loss-limit halt")
+
+// Clustered S/R, off by default — useful when auditing why a setup lost its
+// clean-path or S/R-confluence point.
+var array<line> srLines = array.new<line>()
+if i_showSR and barstate.islast
+    if array.size(srLines) > 0
+        for i = 0 to array.size(srLines) - 1
+            line.delete(array.get(srLines, i))
+        array.clear(srLines)
+    int  srFrom = math.max(0, bar_index - 50)
+    int  lvN    = array.size(lvPrice)
+    if lvN > 0
+        for i = 0 to lvN - 1
+            if array.get(lvTouch, i) >= i_srTouches
+                array.push(srLines, line.new(srFrom, array.get(lvPrice, i),
+                     bar_index, array.get(lvPrice, i), xloc = xloc.bar_index,
+                     extend = extend.right, width = 1,
+                     color = array.get(lvIsRes, i) ? color.new(color.red, 70)
+                      : color.new(color.teal, 70)))
+
+// ───────────────────────────────────────────────────────────────────────────
+//  STATUS PANEL
+// ───────────────────────────────────────────────────────────────────────────
+
+panelPos = i_panelPos == "Top right"    ? position.top_right    :
+     i_panelPos == "Middle right" ? position.middle_right :
+     i_panelPos == "Bottom right" ? position.bottom_right : position.top_left
+
+// Created once at global scope; only the cell contents are rewritten.
+var table panel = table.new(panelPos, 2, 14, border_width = 1,
+     frame_width = 1, frame_color = color.gray)
+
+if i_showPanel and barstate.islast
+    string statusTxt = weeklyHalt ? "WEEKLY HALT" : dailyHalt ? "DAILY HALT" :
+                 dailyDD >= i_ddRestrict ? "RESTRICTED" : "ACTIVE"
+    color statusCol = weeklyHalt or dailyHalt ? color.red :
+                 dailyDD >= i_ddRestrict ? color.orange : color.green
+    float pf = grossLoss > 0 ? grossWin / grossLoss : na
+    table.cell(panel, 0, 0, "TITAN TFBS", text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.small)
+    table.cell(panel, 1, 0, i_profile + " · Method " + methodCode, text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.small)
+    table.cell(panel, 0, 1, "Screen 1 bias", text_size = size.tiny)
+    table.cell(panel, 1, 1, (htfBull ? "UP" : htfBear ? "DOWN" : "RANGE") +
+         (mtfConflict ? "  (divergent)" : ""), text_size = size.tiny,
+         text_color = htfBull ? color.green : htfBear ? color.red : color.gray)
+    table.cell(panel, 0, 2, "Screens", text_size = size.tiny)
+    table.cell(panel, 1, 2, mtfDetail, text_size = size.tiny,
+         text_color = mtfConflict ? color.orange : color.gray)
+    table.cell(panel, 0, 3, "Formation", text_size = size.tiny)
+    table.cell(panel, 1, 3, not haveSetup ? "—" :
+         str.format("{0}  q{1}/2  {2}/5 pref", act.kind, act.qualityPts, act.prefPassed),
+         text_size = size.tiny)
+    table.cell(panel, 0, 4, "State", text_size = size.tiny)
+    table.cell(panel, 1, 4, state + (haveSetup ? "  (" + str.tostring(stAge) + " bars)" : "") +
+         "  · " + str.tostring(deadCount) + " invalidated", text_size = size.tiny)
+    table.cell(panel, 0, 5, "Score", text_size = size.tiny)
+    table.cell(panel, 1, 5, not haveSetup ? "—" :
+         str.format("{0}/10  {1}  (P{2} B{3} R{4} H{5} S{6} RR{7} C{8})", score, grade,
+              scPattern, scBreakout, scRetest, scHTF, scSR, scRR, scPath),
+         text_size = size.tiny,
+         text_color = grade == "ELITE" ? color.orange :
+                      grade == "APPROVED" ? color.green : color.gray)
+    table.cell(panel, 0, 6, "R:R to TP1", text_size = size.tiny)
+    table.cell(panel, 1, 6, not haveSetup ? "—" : str.tostring(math.round(rr, 2)) + ":1",
+         text_size = size.tiny, text_color = rr >= i_minRR ? color.green : color.red)
+    table.cell(panel, 0, 7, "Size / risk", text_size = size.tiny)
+    table.cell(panel, 1, 7, not haveSetup ? "—" :
+         str.format("{0} @ {1}%", math.round(qty, 2), math.round(riskPct, 2)),
+         text_size = size.tiny)
+    table.cell(panel, 0, 8, "Levels", text_size = size.tiny)
+    table.cell(panel, 1, 8, not haveSetup ? "—" :
+         str.format("SL {0}  TP1 {1}  TP2 {2}{3}",
+              str.tostring(stopPx, format.mintick), str.tostring(tp1, format.mintick),
+              str.tostring(tp2, format.mintick), tp2FromSR ? " (S/R)" : " (R)"),
+         text_size = size.tiny)
+    table.cell(panel, 0, 9, "Paper position", text_size = size.tiny)
+    table.cell(panel, 1, 9, not live ? "flat" :
+         str.format("{0} {1} · {2}R · stop {3}", vDir > 0 ? "LONG" : "SHORT",
+              math.round(vLeft, 2), math.round(vR > 0 ? vDir * (close - vEntry) / vR : 0, 2),
+              str.tostring(vStop, format.mintick)),
+         text_size = size.tiny, text_color = live ? color.blue : color.gray)
+    table.cell(panel, 0, 10, "Paper P&L", text_size = size.tiny)
+    table.cell(panel, 1, 10, str.format("{0}  ({1} trades, {2}% win, PF {3})",
+         math.round(peBal - i_account, 2), nTrades,
+         nTrades > 0 ? math.round(nWins * 100.0 / nTrades, 1) : 0,
+         na(pf) ? "—" : str.tostring(math.round(pf, 2))), text_size = size.tiny,
+         text_color = peBal >= i_account ? color.green : color.red)
+    table.cell(panel, 0, 11, "Daily DD", text_size = size.tiny)
+    table.cell(panel, 1, 11, str.tostring(math.round(dailyDD, 2)) + "%", text_size = size.tiny,
+         text_color = dailyHalt ? color.red :
+                      dailyDD >= i_ddRestrict ? color.orange : color.green)
+    table.cell(panel, 0, 12, "Weekly DD", text_size = size.tiny)
+    table.cell(panel, 1, 12, str.tostring(math.round(weeklyDD, 2)) + "%", text_size = size.tiny,
+         text_color = weeklyHalt ? color.red : color.green)
+    table.cell(panel, 0, 13, "Status", text_size = size.tiny)
+    table.cell(panel, 1, 13, statusTxt + (blockReason == "" ? "" : " · " + blockReason),
+         text_color = statusCol, text_size = size.tiny)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  APPENDIX A CHECKLIST PANEL
+// ───────────────────────────────────────────────────────────────────────────
+
+var table chk = table.new(position.bottom_left, 3, 22, border_width = 1,
+     frame_width = 1, frame_color = color.gray)
+
+f_mark(bool passed, bool mandatory) =>
+    passed ? "PASS" : mandatory ? "FAIL" : "miss"
+
+f_markCol(bool passed, bool mandatory) =>
+    passed ? color.green : mandatory ? color.red : color.orange
+
+if i_showCheck and barstate.islast
+    table.cell(chk, 0, 0, "APPENDIX A — PRE-TRADE CHECKLIST", text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.tiny)
+    table.cell(chk, 1, 0, haveSetup ? state : "no setup", text_color = color.white,
+         bgcolor = color.new(color.blue, 20), text_size = size.tiny)
+    table.cell(chk, 2, 0, checklistOk ? "APPROVED" : "BLOCKED", text_size = size.tiny,
+         text_color = color.white,
+         bgcolor = checklistOk ? color.new(color.green, 20) : color.new(color.red, 20))
+
+    table.cell(chk, 0, 1, "PATTERN IDENTIFICATION", text_size = size.tiny,
+         text_color = color.gray)
+    table.cell(chk, 0, 2, "H&S / DT / DB / Triple clearly visible?", text_size = size.tiny)
+    table.cell(chk, 1, 2, f_mark(ck01, true), text_size = size.tiny,
+         text_color = f_markCol(ck01, true))
+    table.cell(chk, 2, 2, haveSetup ? act.kind + " on " + timeframe.period : "—",
+         text_size = size.tiny)
+    table.cell(chk, 0, 3, "Follows an established prior trend?", text_size = size.tiny)
+    table.cell(chk, 1, 3, f_mark(ck02, true), text_size = size.tiny,
+         text_color = f_markCol(ck02, true))
+    table.cell(chk, 2, 3, str.format("{0} bars / {1} ATR", i_priorBars, i_priorATR),
+         text_size = size.tiny)
+    table.cell(chk, 0, 4, "Quality filters pass (symmetry, spacing, volume)?",
+         text_size = size.tiny)
+    table.cell(chk, 1, 4, f_mark(ck03, true), text_size = size.tiny,
+         text_color = f_markCol(ck03, true))
+    table.cell(chk, 2, 4, haveSetup ? str.format("{0}/5 preferred, quality {1}/2",
+         act.prefPassed, act.qualityPts) : "—", text_size = size.tiny)
+
+    table.cell(chk, 0, 5, "BREAKOUT CONFIRMATION", text_size = size.tiny, text_color = color.gray)
+    table.cell(chk, 0, 6, "Key level broken by a CANDLE CLOSE?", text_size = size.tiny)
+    table.cell(chk, 1, 6, f_mark(ck04, true), text_size = size.tiny,
+         text_color = f_markCol(ck04, true))
+    table.cell(chk, 2, 6, haveSetup and state != "armed"
+         ? str.tostring(brkLevel, format.mintick) : "not yet", text_size = size.tiny)
+    table.cell(chk, 0, 7, "Breakout volume > 1.5x average? (preferred)", text_size = size.tiny)
+    table.cell(chk, 1, 7, f_mark(ck05, false), text_size = size.tiny,
+         text_color = f_markCol(ck05, false))
+    table.cell(chk, 2, 7, str.tostring(math.round(brkVolRatio, 2)) + "x", text_size = size.tiny)
+    table.cell(chk, 0, 8, "Retest occurred? (required for Method B/C)", text_size = size.tiny)
+    table.cell(chk, 1, 8, f_mark(ck06, methodNeedsRetest), text_size = size.tiny,
+         text_color = f_markCol(ck06, methodNeedsRetest))
+    table.cell(chk, 2, 8, retestKind == "" ? "none" : retestKind, text_size = size.tiny)
+
+    table.cell(chk, 0, 9, "RISK & REWARD", text_size = size.tiny, text_color = color.gray)
+    table.cell(chk, 0, 10, "Stop at the structural invalidation point?", text_size = size.tiny)
+    table.cell(chk, 1, 10, f_mark(ck07, true), text_size = size.tiny,
+         text_color = f_markCol(ck07, true))
+    table.cell(chk, 2, 10, haveSetup ? str.tostring(stopPx, format.mintick) +
+         (widened ? " (widened)" : "") : "—", text_size = size.tiny)
+    table.cell(chk, 0, 11, "Risk within the per-trade cap?", text_size = size.tiny)
+    table.cell(chk, 1, 11, f_mark(ck08, true), text_size = size.tiny,
+         text_color = f_markCol(ck08, true))
+    table.cell(chk, 2, 11, str.format("{0}% of {1}% cap", math.round(riskPct, 2), maxRiskPct),
+         text_size = size.tiny)
+    table.cell(chk, 0, 12, "Measured move gives at least 2:1?", text_size = size.tiny)
+    table.cell(chk, 1, 12, f_mark(ck09, true), text_size = size.tiny,
+         text_color = f_markCol(ck09, true))
+    table.cell(chk, 2, 12, str.tostring(math.round(rr, 2)) + ":1", text_size = size.tiny)
+    table.cell(chk, 0, 13, "Path to TP1 clear of S/R? (preferred)", text_size = size.tiny)
+    table.cell(chk, 1, 13, f_mark(ck10, false), text_size = size.tiny,
+         text_color = f_markCol(ck10, false))
+    table.cell(chk, 2, 13, str.tostring(obstacles) + " obstacle(s)", text_size = size.tiny)
+
+    table.cell(chk, 0, 14, "TIMEFRAME ALIGNMENT", text_size = size.tiny, text_color = color.gray)
+    table.cell(chk, 0, 15, "Screen 1 (Daily/Weekly) aligned?", text_size = size.tiny)
+    table.cell(chk, 1, 15, f_mark(ck11, true), text_size = size.tiny,
+         text_color = f_markCol(ck11, true))
+    table.cell(chk, 2, 15, mtfDetail, text_size = size.tiny)
+    table.cell(chk, 0, 16, "Screen 2 (4H/1H) formation confirmed?", text_size = size.tiny)
+    table.cell(chk, 1, 16, f_mark(ck12, true), text_size = size.tiny,
+         text_color = f_markCol(ck12, true))
+    table.cell(chk, 2, 16, state, text_size = size.tiny)
+    table.cell(chk, 0, 17, "Screen 3 (15M/5M) precision entry?", text_size = size.tiny)
+    table.cell(chk, 1, 17, "n/a", text_size = size.tiny, text_color = color.gray)
+    table.cell(chk, 2, 17, "folded into Screen 2 (see README)", text_size = size.tiny)
+
+    table.cell(chk, 0, 18, "FINAL AUTHORIZATION", text_size = size.tiny, text_color = color.gray)
+    table.cell(chk, 0, 19, "Confluence score 7/10 or higher?", text_size = size.tiny)
+    table.cell(chk, 1, 19, f_mark(ck14, true), text_size = size.tiny,
+         text_color = f_markCol(ck14, true))
+    table.cell(chk, 2, 19, str.tostring(score) + "/10 -> " + grade, text_size = size.tiny)
+    table.cell(chk, 0, 20, "No high-impact news within 30 minutes?", text_size = size.tiny)
+    table.cell(chk, 1, 20, f_mark(ck15, true), text_size = size.tiny,
+         text_color = f_markCol(ck15, true))
+    table.cell(chk, 2, 20, not i_useBlackout ? "blackout window off — check manually" :
+         inBlackout ? "inside " + i_blackout : "clear of " + i_blackout, text_size = size.tiny)
+    table.cell(chk, 0, 21, "Aggregate risk under cap · trade journalled?",
+         text_size = size.tiny)
+    table.cell(chk, 1, 21, f_mark(ck16 and ck17, i_reqJournal), text_size = size.tiny,
+         text_color = f_markCol(ck16 and ck17, i_reqJournal))
+    table.cell(chk, 2, 21, str.format("{0}% open on this chart only — portfolio risk is " +
+         "the Python engine's job", math.round(openRiskPct, 2)), text_size = size.tiny)
+
+// ───────────────────────────────────────────────────────────────────────────
+//  ALERTS — Ch VI-B watchlist transitions
+// ───────────────────────────────────────────────────────────────────────────
+//  alertcondition() gives one selectable alert per transition, which is what a
+//  watchlist scan wants; the alert() calls above carry the full JSON payload.
+
+brokeEvent   = barstate.isconfirmed and state == "broken"   and stAge == 0
+retestEvent  = barstate.isconfirmed and state == "retested" and stAge == 0
+readyEvent   = barstate.isconfirmed and state == "ready"    and stAge == 0
+armedEvent   = barstate.isconfirmed and state == "armed"    and stAge == 0 and armAge <= 1
+
+alertcondition(armedEvent,  "TFBS · Formation armed",
+     "TFBS: a formation has completed and is on the Ch VI-B watchlist")
+alertcondition(brokeEvent,  "TFBS · Neckline broken",
+     "TFBS: the key level has been broken on a candle close (Ch V-A)")
+alertcondition(retestEvent, "TFBS · Retest confirmed",
+     "TFBS: the break has been retested and rejected (Ch VII Method B)")
+alertcondition(readyEvent,  "TFBS · Follow-through confirmed",
+     "TFBS: follow-through after the retest (Ch VII Method C)")
+alertcondition(signalNow,   "TFBS · Approved signal",
+     "TFBS: an approved setup has cleared the Ch XI gate and Appendix A")
+alertcondition(signalNow and dirSign > 0, "TFBS · Approved LONG",  "TFBS: approved LONG setup")
+alertcondition(signalNow and dirSign < 0, "TFBS · Approved SHORT", "TFBS: approved SHORT setup")
+alertcondition(wickOnly, "TFBS · Wick-only penetration",
+     "TFBS: the level was pierced by a wick and not a close — no trade (Ch V-B)")
+
+if brokeEvent
+    alert(str.format("TFBS {0} {1} neckline BROKEN on {2} — score {3}/10 ({4}), vol {5}x",
+         syminfo.ticker, act.kind, timeframe.period, score, grade,
+         math.round(brkVolRatio, 2)), alert.freq_once_per_bar)
+
+if retestEvent
+    alert(str.format("TFBS {0} {1} RETEST CONFIRMED on {2} — {3} rejection, score {4}/10 " +
+         "({5}), R:R {6}", syminfo.ticker, act.kind, timeframe.period, retestKind, score,
+         grade, math.round(rr, 2)), alert.freq_once_per_bar)
+
+if readyEvent
+    alert(str.format("TFBS {0} {1} FOLLOW-THROUGH on {2} — score {3}/10 ({4}), R:R {5}",
+         syminfo.ticker, act.kind, timeframe.period, score, grade, math.round(rr, 2)),
+         alert.freq_once_per_bar)
+
+if justDied
+    alert(str.format("TFBS {0} setup INVALIDATED on {1} — {2}", syminfo.ticker,
+         timeframe.period, deadReason), alert.freq_once_per_bar)
