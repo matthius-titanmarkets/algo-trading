@@ -234,10 +234,18 @@ would actually trade rather than a parallel implementation of it.
 
 ## TradingView
 
-`tradingview/titan_tfbs_strategy.pine` is a Pine Script v6 port for charting
-and alerts — paste it into the Pine Editor and run it on a 4H or 1H chart. It
-implements the same pipeline, scoring and Ch X exit architecture, and emits
-JSON alerts suitable for broker webhooks.
+Two Pine Script v6 ports live in `tradingview/` — paste either into the Pine
+Editor and run it on a 4H or 1H chart. Both implement the same pipeline,
+scoring and Ch X exit architecture, and emit JSON alerts suitable for broker
+webhooks.
+
+- `titan_tfbs_strategy.pine` — the `strategy()` build, for backtesting in the
+  Strategy Tester.
+- `titan_tfbs_indicator.pine` — the `indicator()` build, for live charting and
+  watchlist scanning. It adds the Appendix A checklist on screen, the second
+  Ch IX trend screen, clustered S/R levels behind the Ch XI confluence factors,
+  and a paper ledger so the daily and weekly loss limits still bind without a
+  `strategy.equity` to measure against.
 
 It cannot enforce the portfolio-level rules — Pine sees one symbol, so Ch
 VIII-A's 5% aggregate open risk and the 2-per-sector correlated cap are outside
