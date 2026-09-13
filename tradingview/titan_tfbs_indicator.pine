@@ -35,6 +35,10 @@
 //      performance numbers use the strategy build and the Strategy Tester.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TMLLC0601
+
+//@version=6
 indicator("Titan TFBS — Formation Breakout System [Indicator]", "TFBS-I",
      overlay          = true,
      max_bars_back    = 1000,
@@ -591,27 +595,61 @@ f_detect() =>
                 int   d2     = math.max(1, b3 - b2)
                 float symD   = math.abs(d1 - d2) / math.max(d1, d2)
                 bool  volOk  = v1 > v2 and v2 > v3
-                bool  trendOk= f_priorTrendOk(b1, bearish)
+                trendOk = f_priorTrendOk(b1, bearish)
 
-                // ── Head & Shoulders (Ch III) ──────────────────────────────
-                if headOut and prom >= i_headProm and geomOk and trendOk and
-                   f_contextOk(b3, p2, bearish) and (not i_volDecline or volOk)
-                    int passed = f_prefPassed(symH <= i_symTol, symD <= i_symTol, flat,
-                         span >= i_minFormBars, volOk)
-                    f.kind         := bearish ? "H&S" : "InvH&S"
+    // — Head & Shoulders (Ch III) ————————————————————————
+    contextOk = f_contextOk(b3, p2, bearish)
+    if headOut and prom >= i_headProm and geomOk and trendOk and contextOk and (not i_volDecline or volOk)
+        int passed = f_prefPassed(symH <= i_symTol, symD <= i_symTol, flat,
+             span >= i_minFormBars, volOk)
+        f.kind          := bearish ? "H&S" : "InvH&S"
+        f.bearish       := bearish
+        f.neckAnchor    := t1 + slope * (b3 - bt1)
+        f.neckSlope     := slope
+        f.neckBar       := b3
+        f.height        := h
+        f.invalidation  := p3
+        f.apex          := p2
+        f.prefPassed    := passed
+        f.qualityPts    := f_qualityPoints(passed)
+        f.startBar      := b1
+        f.endBar        := b3
+        f.volumeOk      := volOk
+        f.priorOk       := trendOk
+        f.patAtr        := atr
+        f.b1 := b1
+        f.x1 := p1
+        f.b2 := b2
+        f.x2 := p2
+        f.b3 := b3
+        f.x3 := p3
+
+    // — Triple Top / Bottom (Ch IV-D, +1 confluence) ————————
+    else if allLevel and geomOk and trendOk
+        float conf = bearish ? math.min(t1, t2) : math.max(t1, t2)
+        float lvl  = (p1 + p2 + p3) / 3.0
+        float hh   = math.abs(lvl - conf)
+        float ext   = bearish ? math.max(math.max(p1, p2), p3)
+                                          : math.min(math.min(p1, p2), p3)
+        bool tripleOk = hh >= atr and f_contextOk(b3, ext, bearish) and (not i_volDecline or volOk)
+    if tripleOk
+        int passed3 = f_prefPassed(true, true, true, span >= i_minFormBars, volOk)
+    if bearish or bullish
+                    f.kind := bearish ? "TT" : "TB"
                     f.bearish      := bearish
-                    f.neckAnchor   := t1 + slope * (b3 - bt1)
-                    f.neckSlope    := slope
+                    f.neckAnchor   := conf
+                    f.neckSlope    := 0.0
                     f.neckBar      := b3
-                    f.height       := h
-                    f.invalidation := p3
-                    f.apex         := p2
-                    f.prefPassed   := passed
-                    f.qualityPts   := f_qualityPoints(passed)
+                    f.height       := hh
+                    f.invalidation := ext
+                    f.apex         := lvl
+                    f.prefPassed   := passed3
+                    f.qualityPts   := f_qualityPoints(passed3)
                     f.startBar     := b1
                     f.endBar       := b3
                     f.volumeOk     := volOk
                     f.priorOk      := trendOk
+                    f.triple       := true
                     f.patAtr       := atr
                     f.b1 := b1
                     f.x1 := p1
@@ -619,40 +657,6 @@ f_detect() =>
                     f.x2 := p2
                     f.b3 := b3
                     f.x3 := p3
-
-                // ── Triple Top / Bottom (Ch IV-D, +1 confluence) ───────────
-                else if allLevel and geomOk and trendOk
-                    float conf  = bearish ? math.min(t1, t2) : math.max(t1, t2)
-                    float lvl   = (p1 + p2 + p3) / 3.0
-                    float hh    = math.abs(lvl - conf)
-                    float ext   = bearish ? math.max(math.max(p1, p2), p3)
-                                          : math.min(math.min(p1, p2), p3)
-                    if hh >= atr and f_contextOk(b3, ext, bearish) and
-                       (not i_volDecline or volOk)
-                        int passed3 = f_prefPassed(true, true, true,
-                             span >= i_minFormBars, volOk)
-                        f.kind         := bearish ? "TT" : "TB"
-                        f.bearish      := bearish
-                        f.neckAnchor   := conf
-                        f.neckSlope    := 0.0
-                        f.neckBar      := b3
-                        f.height       := hh
-                        f.invalidation := ext
-                        f.apex         := lvl
-                        f.prefPassed   := passed3
-                        f.qualityPts   := f_qualityPoints(passed3)
-                        f.startBar     := b1
-                        f.endBar       := b3
-                        f.volumeOk     := volOk
-                        f.priorOk      := trendOk
-                        f.triple       := true
-                        f.patAtr       := atr
-                        f.b1 := b1
-                        f.x1 := p1
-                        f.b2 := b2
-                        f.x2 := p2
-                        f.b3 := b3
-                        f.x3 := p3
 
     // ── Three-pivot window: Double Top / Double Bottom (Ch IV) ─────────────
     if f.kind == "none" and n >= 3
@@ -866,8 +870,8 @@ entryPx = close
 // Method A stops beyond the formation's own invalidation; B and C sit just
 // beyond the retest wick, which is exactly where the structural flip fails.
 useStructStop = methodCode == "A" or state == "broken"
-rawStop = useStructStop ? act.invalidation + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
-                        : retestWick       + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
+stopAdj = act.bearish ? i_stopBuf * atr : -i_stopBuf * atr
+rawStop = useStructStop ? act.invalidation + stopAdj : retestWick + stopAdj         retestWick       + (act.bearish ? i_stopBuf * atr : -i_stopBuf * atr)
 
 stopFloor = math.max(math.max(i_minStopATR * atr, i_minStopPat * act.patAtr), 4 * tick)
 float stopPx  = rawStop
@@ -1514,4 +1518,6 @@ if readyEvent
 
 if justDied
     alert(str.format("TFBS {0} setup INVALIDATED on {1} — {2}", syminfo.ticker,
+         timeframe.period, deadReason), alert.freq_once_per_bar)
+plot(close)
          timeframe.period, deadReason), alert.freq_once_per_bar)
